@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Better naming schemes for fixed-width types.  */
+/** Better naming schemes for fixed-width types.  */
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -15,19 +15,19 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-/* Make bool more platform efficient */
+/** Make bool more platform efficient */
 typedef u32 b32;
 #define true ((b32)1)
 #define false ((b32)0)
 
-/* Make NULL lower-case. */
+/** Make NULL lower-case. */
 #define null NULL
 
-/* Make char * more opaque. */
+/** Make char * more opaque. */
 typedef char cstr;
 typedef unsigned char ucstr;
 
-/* Make an optional type that just makes it more opaque it's nullable. */
+/** Make an optional type that just makes it more opaque it's nullable. */
 #ifdef USE_NULLABLE_TYPES
 typedef u8 u8_nullable;
 typedef u16 u16_nullable;

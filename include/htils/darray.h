@@ -23,7 +23,7 @@ struct da_header {
 //
 //
 
-/*
+/**
  * @brief Get the da_header
  *
  * @details Gets the da_header from a dynamic array, by casting and then
@@ -37,13 +37,13 @@ static inline da_header_t *da__hdr(void *da) {
   return (da_header_t *)((cstr *)da - DA_HEADER_SIZE);
 }
 
-/* Gets the length of the current dynamic array */
+/** Gets the length of the current dynamic array */
 #define da_len(darray) ((darray) ? da__hdr(darray)->len : 0)
 
-/* Gets the capacity of the current dynamic array */
+/** Gets the capacity of the current dynamic array */
 #define da_cap(darray) ((darray) ? da__hdr(darray)->cap : 0)
 
-/*
+/**
  * @brief Initialize a dynamic array.
  *
  * @details Initializes a dynamic array with the given capacity, through some
@@ -66,7 +66,7 @@ static inline da_header_t *da__hdr(void *da) {
 //
 //
 
-/*
+/**
  * @brief Append an item to a dynamic array.
  *
  * @details Appends an item to a dynamic array, if the dynamic array is not
@@ -99,7 +99,7 @@ static inline da_header_t *da__hdr(void *da) {
     (darray)[da__hdr(darray)->len++] = (item);                                 \
   } while (0)
 
-/*
+/**
  * @brief Pop an item from a dynamic array.
  *
  * @details Pops an item from a dynamic array by simply decrementing its length,
@@ -113,7 +113,7 @@ static inline da_header_t *da__hdr(void *da) {
       da__hdr(da)->len--;                                                      \
   } while (0)
 
-/*
+/**
  * @brief Substitutes with the last item in a dynamic array.
  *
  * @details Substitutes with the last item in a dynamic array, if the dynamic
@@ -124,7 +124,7 @@ static inline da_header_t *da__hdr(void *da) {
 #define da_last(darray)                                                        \
   (htils_assert(da__hdr(darray)->len > 0), (darray)[da__hdr(darray)->len - 1])
 
-/*
+/**
  * @brief Clears a dynamic array.
  *
  * @details Clears a dynamic array, setting its length to 0.

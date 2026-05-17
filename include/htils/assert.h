@@ -5,7 +5,7 @@
 //
 //
 
-/* For using the gnu extension program_invocation_short_name */
+/** For using the gnu extension program_invocation_short_name */
 #define _GNU_SOURCE
 
 //
@@ -18,7 +18,7 @@
 //
 //
 
-/*
+/**
  * @brief The name of the program, exposed by the GNU standard.
  *
  * @details This variable is exposed by the GNU standard, and is used to get the
@@ -32,7 +32,7 @@ extern cstr *program_invocation_short_name;
 //
 //
 
-/*
+/**
  * @brief Terminates the program with an error message.
  *
  * @details This function terminates the program with an error message, this is

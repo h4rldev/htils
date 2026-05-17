@@ -33,7 +33,7 @@ struct temp_arena {
 //
 //
 
-/*
+/**
  * @brief Create a new arena.
  *
  * @details Initializes a new arena using VirtualAlloc or mmap, depending on
@@ -46,7 +46,7 @@ struct temp_arena {
  */
 arena_t *arena_new(u64 reserve_size, u64 commit_size);
 
-/*
+/**
  * @brief Free an arena.
  *
  * @details Frees an arena using VirtualFree or munmap, depending on system,
@@ -61,7 +61,7 @@ void arena_free(arena_t *arena);
 //
 //
 
-/*
+/**
  * @brief Allocate a chunk of memory to the arena.
  *
  * @note This function is not meant to be run directly, and is called by the
@@ -77,7 +77,7 @@ void arena_free(arena_t *arena);
  */
 void *__arena_alloc(struct arena *arena, u64 size);
 
-/*
+/**
  * @brief Deallocate a chunk of memory from the arena.
  *
  * @note This function is not meant to be run directly, and is called by the
@@ -95,7 +95,7 @@ void __arena_dealloc(struct arena *arena, u64 size);
 //
 //
 
-/*
+/**
  * @brief Allocate a chunk of memory from the arena.
  *
  * @details This macro allocates a chunk of memory from the arena, and returns
@@ -111,7 +111,7 @@ void __arena_dealloc(struct arena *arena, u64 size);
 #define arena_alloc(arena, type, size)                                         \
   __arena_alloc(arena, sizeof(type) * size);
 
-/*
+/**
  * @brief Deallocate a chunk of memory from the arena.
  *
  * @details This macro deallocates a chunk of memory from the arena, using the
@@ -129,7 +129,7 @@ void __arena_dealloc(struct arena *arena, u64 size);
 //
 //
 
-/*
+/**
  * @brief Deallocate in the arena to a select position within it.
  *
  * @details This function is used to deallocate a chunk of memory from the arena
@@ -141,7 +141,7 @@ void __arena_dealloc(struct arena *arena, u64 size);
  */
 void arena_dealloc_to(arena_t *arena, u64 pos);
 
-/*
+/**
  * @brief Clear the arena.
  *
  * @details This function is used to clear the arena, it will deallocate/pop to
@@ -155,7 +155,7 @@ void arena_clear(arena_t *arena);
 //
 //
 
-/*
+/**
  * @brief Create a new temporary arena.
  *
  * @details This function creates a new temporary arena, for temporary
@@ -168,7 +168,7 @@ void arena_clear(arena_t *arena);
  */
 temp_arena_t temp_arena_new(arena_t *arena);
 
-/*
+/**
  * @brief Free a temporary arena.
  *
  * @details This function frees a temporary arena, by just popping to the

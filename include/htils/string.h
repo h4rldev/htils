@@ -29,7 +29,7 @@ typedef string_t string_nullable_t;
 //
 //
 
-/*
+/**
  * @brief Creates a new string.
  *
  * @details Heap allocs a new string, with the given length, it's
@@ -46,7 +46,7 @@ string *string_new(arena_t *arena, const u64 len);
 //
 //
 
-/*
+/**
  * @brief Duplicates a string.
  *
  * @details Heap dup a string, by allocating a new string to the
@@ -63,7 +63,7 @@ string *string_dup(arena_t *arena, const string *from);
 //
 //
 
-/*
+/**
  * @brief Create a string from a C-string.
  *
  * @details Creates a new string from a C-string, it's a wrapper
@@ -80,7 +80,7 @@ string *string_from_cstr(arena_t *arena, const cstr *base);
 //
 //
 
-/*
+/**
  * @brief Convert a string to a C-string.
  *
  * @details Converts a string to a C-string, by simply
@@ -96,7 +96,7 @@ cstr *string_to_cstr(const string *str);
 //
 //
 
-/*
+/**
  * @brief Concatenates two strings.
  *
  * @details Concatenates two strings, by allocating a new string
@@ -111,7 +111,7 @@ cstr *string_to_cstr(const string *str);
  */
 u64 string_concat(arena_t *arena, string *dest, const string *src);
 
-/*
+/**
  * @brief Concatenate len bytes of src to dest.
  *
  * @details Concatenates len bytes of src to dest, by allocating a
@@ -128,7 +128,7 @@ u64 string_concat(arena_t *arena, string *dest, const string *src);
 u64 string_concatb(arena_t *arena, string *dest, const string *src,
                    const u64 len);
 
-/*
+/**
  * @brief Concatenates a formatted string to a string.
  *
  * @details Concatenates a formatted string to a string, by first
@@ -149,7 +149,7 @@ u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...);
 //
 //
 
-/*
+/**
  * @brief Compares two strings.
  *
  * @details Compare the length and the data of the 2 strings to check if they're
@@ -162,7 +162,7 @@ u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...);
  */
 b32 stringcmp(const string *first, const string *second);
 
-/*
+/**
  * @brief Compares len bytes of each string.
  *
  * @details Compares len bytes of each string to check if they're equal.
@@ -179,7 +179,7 @@ b32 stringcmpb(const string *first, const string *second, const u64 len);
 //
 //
 
-/*
+/**
  * @brief Splits a string by a delimiter.
  *
  * @details Splits a string by a delimiter, creating a dynamic array of strings
@@ -198,21 +198,21 @@ u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena);
 //
 //
 
-/*
+/**
  * @brief Trims whitespace from the start and end of a string.
  *
  * @param str The string to trim.
  */
 void string_trim(string *str);
 
-/*
+/**
  * @brief Trims whitespace from the start of a string.
  *
  * @param str The string to trim.
  */
 void string_trim_left(string *str);
 
-/*
+/**
  * @brief Trims whitespace from the end of a string.
  *
  * @param str The string to trim.
@@ -223,7 +223,7 @@ void string_trim_right(string *str);
 //
 //
 
-/*
+/**
  * @brief Finds the first occurance of a character in a string.
  *
  * @param haystack The string to search in.
@@ -234,7 +234,7 @@ void string_trim_right(string *str);
  */
 i64 string_findc(string *haystack, u8 needle);
 
-/*
+/**
  * @brief Finds the first occurance of a string in a string.
  *
  * @param haystack The string to search in.

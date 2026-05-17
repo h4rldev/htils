@@ -54,7 +54,7 @@ typedef hashmap_t hashmap_nullable_t;
 //
 //
 
-/*
+/**
  * @brief Creates a new hashmap.
  *
  * @details Creates a new hashmap, with the given capacity, and arena, if the
@@ -71,7 +71,7 @@ hashmap_t *hashmap_new(arena_t *arena, const u64 capacity);
 //
 //
 
-/*
+/**
  * @brief Insert a K/V into the hashmap.
  *
  * @details Inserts a K/V into the hashmap, if the key already exists, it will
@@ -87,7 +87,7 @@ hashmap_t *hashmap_new(arena_t *arena, const u64 capacity);
 hashmap_result_t hashmap_insert(hashmap_t *hashmap, const string *key,
                                 const void *value);
 
-/*
+/**
  * @brief Remove / Kill a K/V from the hashmap.
  *
  * @details Removes a K/V from the hashmap, if the key doesn't exist, it will
@@ -105,7 +105,7 @@ hashmap_result_t hashmap_kill(hashmap_t *hashmap, const string *key);
 //
 //
 
-/*
+/**
  * @brief Get a V from the hashmap.
  *
  * @details Gets an entry from the hashmap, if the entry doesn't exist, it will

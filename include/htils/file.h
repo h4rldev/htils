@@ -15,7 +15,7 @@
 // Get the size of a file
 //
 
-/*
+/**
  * @brief Gets the size of a file from a file stream.
  *
  * @details Gets the size of a file, by opening the file and getting the size
@@ -27,7 +27,7 @@
  */
 u64 file_size_stream(FILE *stream);
 
-/*
+/**
  * @brief Gets the size of a file.
  *
  * @details Gets the size of a file, by opening the file and getting the size
@@ -43,7 +43,7 @@ u64 file_size(const string *path);
 // Read from file
 //
 
-/*
+/**
  * @brief Reads the contents of a file from a file stream into a string.
  *
  * @details Reads the entire file 'til EOF and stores it in a string, with the
@@ -56,7 +56,7 @@ u64 file_size(const string *path);
  */
 string *read_file_from_stream(arena_t *arena, FILE *stream);
 
-/*
+/**
  * @brief Reads the contents of a file into a string.
  *
  * @details Reads the entire file 'til EOF and stores it in a string, with the
@@ -73,7 +73,7 @@ string *read_file(arena_t *arena, const string *path);
 // Read from file by bytes
 //
 
-/*
+/**
  * @brief Reads bytes bytes from a file stream into a string.
  *
  * @details Reads bytes bytes from a file stream into a string, by allocating
@@ -88,7 +88,7 @@ string *read_file(arena_t *arena, const string *path);
 string *read_file_from_stream_bytes(arena_t *arena, FILE *stream,
                                     const u64 bytes);
 
-/*
+/**
  * @brief Reads bytes bytes from a file into a string.
  *
  * @details Reads bytes bytes from a file into a string, by allocating a block
@@ -106,7 +106,7 @@ string *read_file_bytes(arena_t *arena, const string *path, const u64 bytes);
 // Write to file
 //
 
-/*
+/**
  * @brief Writes a string to a file stream.
  *
  * @details Writes a string to a file stream, by writing len characters to
@@ -119,8 +119,8 @@ string *read_file_bytes(arena_t *arena, const string *path, const u64 bytes);
  */
 u64 write_to_file_stream(FILE *stream, const string *contents);
 
-/*
- * @breif Writes a string to a file.
+/**
+ * @brief Writes a string to a file.
  *
  * @details Writes a string to a file, by writing len characters to that file.
  *
@@ -135,7 +135,7 @@ u64 write_to_file(const string *path, const string *contents);
 // Write to file by bytes
 //
 
-/*
+/**
  * @brief Writes bytes bytes from a string to a file stream.
  *
  * @param stream The file stream to write to.
@@ -146,7 +146,7 @@ u64 write_to_file(const string *path, const string *contents);
 u64 write_to_file_stream_bytes(FILE *stream, const string *contents,
                                const u64 bytes);
 
-/*
+/**
  * @brief Writes bytes bytes from a string to a file.
  *
  * @param path The path to the file to write to.
@@ -161,7 +161,7 @@ u64 write_to_file_bytes(const string *path, const string *contents,
 // File IO misc. utilities
 //
 
-/*
+/**
  * @brief Makes a directory.
  *
  * @param path The path to the directory to make.
@@ -170,7 +170,7 @@ u64 write_to_file_bytes(const string *path, const string *contents,
  */
 b32 make_dir(const string *path);
 
-/*
+/**
  * @brief Checks if a path exists.
  *
  * @param path The path to check.

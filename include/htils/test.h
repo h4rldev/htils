@@ -18,14 +18,14 @@
 //
 //
 
-/* Test function type. */
+/** Test function type. */
 typedef const cstr *test_fn(arena_t *arena);
 
 //
 //
 //
 
-/* The test assertion, basically signals if condition is false, the test fails.
+/** The test assertion, basically signals if condition is false, the test fails.
  */
 #define HTILS_TEST_ASSERT(cond, msg)                                           \
   do {                                                                         \
@@ -36,10 +36,10 @@ typedef const cstr *test_fn(arena_t *arena);
     }                                                                          \
   } while (0)
 
-/* The test macro for test declarations. */
+/** The test macro for test declarations. */
 #define HTILS_TEST(name) static const cstr *htils_test_##name(arena_t *arena)
 
-/* The runtime for the tests, uses temporary arenas. */
+/** The runtime for the tests, uses temporary arenas. */
 #define HTILS_TEST_RUN(name, failures)                                         \
   do {                                                                         \
     if (arena == null) {                                                       \

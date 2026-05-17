@@ -9,7 +9,7 @@
 //
 //
 
-/*
+/**
  * @brief Gets the absolute path of a path.
  *
  * @details Gets the absolute path of a path, will only work on a partial yet
@@ -22,7 +22,7 @@
  */
 string *path_canonical(arena_t *arena, const string *path);
 
-/*
+/**
  * @brief Get the basename i.e the filename+extension / final dir of a path.
  *
  * @details Get the basename i.e the filename+extension of a path, by trimming
@@ -35,7 +35,7 @@ string *path_canonical(arena_t *arena, const string *path);
  */
 string *path_basename(arena_t *arena, const string *path);
 
-/*
+/**
  * @brief Get the dirname of a path.
  *
  * @details Get the dirname of a path, trimming away the file from the path.
@@ -47,7 +47,7 @@ string *path_basename(arena_t *arena, const string *path);
  */
 string *path_dirname(arena_t *arena, const string *path);
 
-/*
+/**
  * @brief Get the extension of a path.
  *
  * @details Gets the last extension of a path, by splitting the path by '.' and
@@ -60,7 +60,7 @@ string *path_dirname(arena_t *arena, const string *path);
  */
 string *path_extension(arena_t *arena, const string *path);
 
-/*
+/**
  * @brief Get the stem of a path.
  *
  * @details Gets the stem of a path, i.e the extension prior to the extension.
@@ -76,7 +76,7 @@ string *path_stem(arena_t *arena, const string *path);
 //
 //
 
-/*
+/**
  * @brief Joins two paths together.
  *
  * @details Joins two paths together, bascially a wrapper + extension of

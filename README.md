@@ -46,6 +46,8 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 > Final note in the features tab
 >
 > This library is mostly documented, so if you need help on how to use each respective api, read the header files in `./include`
+>
+> If you want a nice little documentation site, run doxygen in a clone of this repo and open index.html in `./doc/html`
 
 ## Building
 

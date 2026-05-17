@@ -4,5 +4,6 @@
 lib
 out
 bin
+doc
 
 compile_commands.json
