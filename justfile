@@ -33,8 +33,8 @@ debug_link_flags := debug_shared_flags + link_flags + ' -static-libasan -lhtils-
 release_shared_flags := '-O2 -std=gnu11 -Wl,-rpath,.'
 release_compile_flags := release_shared_flags
 release_link_flags := release_shared_flags + link_flags + '  -lhtils -Llib'
-debug_static_link_flags := debug_link_flags + ' -static'
-release_static_link_flags := release_link_flags + ' -static'
+debug_static_link_flags := debug_link_flags + ' -static  -fPIC'
+release_static_link_flags := release_link_flags + ' -static -fPIC'
 
 # Default justfile target (lists all available targets)
 default:
@@ -179,6 +179,7 @@ compile-test type="debug" force="false" threads=num_cpus():
 link-test type="debug" static="dynamic":
     #!/usr/bin/env bash
     shopt -s globstar
+    set -x
 
     [[ -d {{ test_out }} ]] || just compile-test {{ type }}
     [[ -d {{ bin }} ]] || mkdir -p {{ bin }}
@@ -266,13 +267,13 @@ build-test type="debug" force="false" static="dynamic" threads=num_cpus():
     just link-test {{ type }} {{ static }}
 
 build-test-static force="false" threads=num_cpus():
-    just build-test release {{ force }} {{ threads }} static
+    just build-test release {{ force }} static {{ threads }}
 
-debug force="false" threads=num_cpus():
-    just build-htils debug {{ force }} {{ threads }}
+debug static="dynamic" force="false" threads=num_cpus():
+    just build-htils debug {{ force }} {{ static }} {{ threads }}
 
-release force="false" threads=num_cpus():
-    just build-htils release {{ force }} {{ threads }}
+release static="dynamic" force="false" threads=num_cpus():
+    just build-htils release {{ force }} {{ static }}  {{ threads }}
 
 release-static force="false" threads=num_cpus():
     just build-htils-static {{ force }} {{ threads }}

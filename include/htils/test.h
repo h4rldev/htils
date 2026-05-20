@@ -11,6 +11,7 @@
 #include <htils/basictypes.h>
 
 #define COLOR_GREEN "\x1b[32m"
+#define COLOR_CYAN "\x1b[36m"
 #define COLOR_RED "\x1b[31m"
 #define COLOR_RESET "\x1b[0m"
 
@@ -40,8 +41,9 @@ typedef const cstr *test_fn(arena_t *arena);
 #define HTILS_TEST(name) static const cstr *htils_test_##name(arena_t *arena)
 
 /** The runtime for the tests, uses temporary arenas. */
-#define HTILS_TEST_RUN(name, failures)                                         \
+#define HTILS_TEST_RUN(name)                                                   \
   do {                                                                         \
+    test_count++;                                                              \
     if (arena == null) {                                                       \
       fprintf(stderr, "No arena found, did you forget to initialize one?\n");  \
       exit(1);                                                                 \
@@ -54,10 +56,31 @@ typedef const cstr *test_fn(arena_t *arena);
                                                                                \
     if (!result)                                                               \
       fprintf(stderr, "   %sPASS%s: %s\n", COLOR_GREEN, COLOR_RESET, #name);   \
+    else if (result[0] == '@')                                                 \
+      fprintf(stderr, "   %sSKIPPED%s: %s\n", COLOR_CYAN, COLOR_RESET, #name); \
     else                                                                       \
       (failures)++;                                                            \
   } while (0)
 
+/** Handle the test results, prints the results and returns 0 if all tests pass,
+ * returns 1 if any test fails. */
+#define HTILS_TEST_RESULT()                                                    \
+  do {                                                                         \
+    if (failures > 0) {                                                        \
+      fprintf(stderr, "\n%u Tests %sFAILED%s.\n", failures, COLOR_RED,         \
+              COLOR_RESET);                                                    \
+      return 1;                                                                \
+    }                                                                          \
+                                                                               \
+    fprintf(stderr, "\nAll %u tests %sPASSED%s.\n", test_count, COLOR_GREEN,   \
+            COLOR_RESET);                                                      \
+    return 0;                                                                  \
+  } while (0)
+
+/** Lil macro that makes test passes more opaque */
 #define HTILS_TEST_PASS null
+
+/** Lil macro to tell the test suite to skip a test */
+#define HTILS_TEST_SKIP "@"
 
 #endif // !HTILS_TEST_H

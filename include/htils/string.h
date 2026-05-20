@@ -8,18 +8,25 @@
 //
 //
 
+/** Helper macro for printing strings. */
 #define print_string ".*s"
+/** Helper macro that works with \ref print_string. */
 #define print_string_arg(string) (int)(string)->len, (cstr *)(string)->base
 
 //
 //
 //
 
-typedef struct string string;
-struct string {
+/**
+ * @brief a \ref string.
+ *
+ * @param base The base of the \ref string.
+ * @param len The length of the \ref string.
+ */
+typedef struct _string {
   u8 *base;
   u64 len;
-};
+} string;
 
 #ifdef USE_NULLABLE_TYPES
 typedef string_t string_nullable_t;
@@ -30,15 +37,21 @@ typedef string_t string_nullable_t;
 //
 
 /**
- * @brief Creates a new string.
+ * @brief Creates a new \ref string.
  *
- * @details Heap allocs a new string, with the given length, it's
- * null by default.
+ * @details Allocates a new \ref string using \ref arena_alloc(), with the given
+ * length, it's contents are null by default.
  *
- * @param arena The arena to allocate from.
- * @param len The length of the string.
+ * @param arena The \ref arena to allocate from.
+ * @param len The length for the \ref string.
  *
- * @return A pointer to the new string.
+ * @pre
+ * - @c arena must be valid and cannot be `null`.
+ * - @c len must be greater than 0.
+ *
+ * @return A pointer to the new \ref string.
+ *
+ * @see \ref arena_alloc()
  */
 string *string_new(arena_t *arena, const u64 len);
 
@@ -47,15 +60,19 @@ string *string_new(arena_t *arena, const u64 len);
 //
 
 /**
- * @brief Duplicates a string.
+ * @brief Duplicates @c from to a new \ref string.
  *
- * @details Heap dup a string, by allocating a new string to the
- * arena, and copying the contents to the new string.
+ * @details Allocates a new \ref string with \ref string_new(), and copies the
+ * contents to the new string.
  *
- * @param arena The arena to allocate from.
- * @param from The string to duplicate.
+ * @param arena The \ref arena to allocate from.
+ * @param from The \ref string to duplicate.
  *
- * @return A pointer to the new string.
+ * @pre @c arena and @c from must be valid and cannot be `null`.
+ *
+ * @return A pointer to the new \ref string.
+ *
+ * @see \ref string_new()
  */
 string *string_dup(arena_t *arena, const string *from);
 
@@ -64,15 +81,24 @@ string *string_dup(arena_t *arena, const string *from);
 //
 
 /**
- * @brief Create a string from a C-string.
+ * @brief Create a \ref string from a C-string.
  *
- * @details Creates a new string from a C-string, it's a wrapper
- * around the C-string pretty much, taking note of its lenth.
+ * @details Since \ref string is a wrapper around the C-string pretty much, It
+ * simply creates a new \ref string with \ref string_new(), and then copies the
+ * contents of the C-string to the new string calculating the \ref string's
+ * length with <a href="https://en.cppreference.com/c/string/byte/strlen"
+ * target="_blank">strlen()</a>.
  *
- * @param arena The arena to allocate from.
- * @param base The C-string to create the string from.
+ * @param arena The \ref arena to allocate from.
+ * @param base The C-string to create the \ref string from.
+ *
+ * @pre @c arena and @c base must be valid and cannot be `null`.
  *
  * @return A pointer to the new string.
+ *
+ * @see \ref string_new(), <a
+ * href="https://en.cppreference.com/c/string/byte/strlen"
+ * target="_blank">strlen()</a>.
  */
 string *string_from_cstr(arena_t *arena, const cstr *base);
 
@@ -81,14 +107,18 @@ string *string_from_cstr(arena_t *arena, const cstr *base);
 //
 
 /**
- * @brief Convert a string to a C-string.
+ * @brief Convert a \ref string to a \ref cstr.
  *
- * @details Converts a string to a C-string, by simply
- * null-terminating the end of the base, and then returning.
+ * @details Casts the `base` param of \ref string and then null-terminates the
+ * end of the base, and then returns it.
  *
- * @param str The string to convert.
+ * @param str The \ref string to convert.
  *
- * return A pointer to the C-string.
+ * @pre @c str must be valid and cannot be `null`.
+ *
+ * return A pointer to the \ref cstr.
+ *
+ * @see \ref string, \ref cstr
  */
 cstr *string_to_cstr(const string *str);
 
@@ -97,51 +127,69 @@ cstr *string_to_cstr(const string *str);
 //
 
 /**
- * @brief Concatenates two strings.
+ * @brief Concatenates two \ref strings.
  *
- * @details Concatenates two strings, by allocating a new string
- * the size of the 2 strings, and then copying them over, and then setting dest
- * to be that new string.
+ * @details By allocating a new \ref string using \ref arena_alloc() with the
+ * size of the 2 \ref strings passed, and then copying them over, and then
+ * setting dest to be that new \ref string.
  *
- * @param arena The arena to allocate the new string in.
- * @param dest The string to set to the new string.
- * @param src The string to concatenate to the dest string.
+ * @param arena The \ref arena to allocate the new string in.
+ * @param dest The \ref string to set to the new string.
+ * @param src The \ref string to concatenate to the dest string.
  *
- * @return The length of the new string for verification purposes.
+ * @pre @c arena, @c dest, and @c src must be valid and cannot be `null`.
+ *
+ * @return The length of the new \ref string for verification purposes.
+ *
+ * @see \ref string, \ref arena, \ref arena_alloc()
  */
 u64 string_concat(arena_t *arena, string *dest, const string *src);
 
 /**
- * @brief Concatenate len bytes of src to dest.
+ * @brief Concatenate @c len bytes of @c src to @c dest.
  *
- * @details Concatenates len bytes of src to dest, by allocating a
- * new string with the size of dest + len, and then copying dest, then len bytes
- * of src to the new string, then sets dest to the new string.
+ * @details Concatenates @c len bytes of @c src to @c dest, by allocating a
+ * new string with the size of @c dest + @c len, and then copying @c dest, then
+ * @c len bytes of @c src to the new \ref string, then sets dest to the new
+ * \ref string.
  *
- * @param arena The arena to allocate the new string in.
- * @param dest The string to set to the new string.
- * @param src The string to concatenate to the dest string.
+ * @param arena The \ref arena to allocate the new string in.
+ * @param dest The \ref string to set to the new string.
+ * @param src The \ref string to concatenate to the dest string.
  * @param len The length of the bytes to concatenate.
  *
+ * @pre
+ * - @c arena, @c dest, and @c src must be valid and cannot be `null`.
+ * - @c len must be greater than 0.
+ *
  * @return The length of the new string for verification purposes.
+ *
+ * @see \ref string, \ref arena, \ref arena_alloc()
  */
 u64 string_concatb(arena_t *arena, string *dest, const string *src,
                    const u64 len);
 
 /**
- * @brief Concatenates a formatted string to a string.
+ * @brief Concatenates a formatted \ref cstr to a \ref string.
  *
- * @details Concatenates a formatted string to a string, by first
- * handling the formatting of the extra args, then calculating the length of
- * them, making a new string and then copying dest and the format to the new
- * string, before setting dest.
+ * @details Concatenates a formatted \ref cstr to a \ref string, by first
+ * handling the formatting of the variadic args, then calculating the length of
+ * them, making a new \ref string and then copying @c dest, and @c fmt to the
+ * new
+ * \ref string, before setting @c dest.
  *
- * @param arena The arena to allocate the new string in.
- * @param dest The string to set to the new string.
- * @param fmt The format string to concatenate to the dest string.
- * @param ... The extra args to format the string with.
+ * @param arena The \ref arena to allocate the new string in.
+ * @param dest The \ref string to set to the new string.
+ * @param fmt The format \ref cstr to concatenate to the dest string.
+ * @param ... The variadic args to format the \ref string with.
  *
- * @return The length of the new string for verification purposes.
+ * @pre @c arena, @c dest, and @c fmt must be valid and cannot be `null`.
+ *
+ * @return The length of the new \ref string for verification purposes.
+ *
+ * @see \ref string, \ref arena, \ref arena_alloc(), <a
+ * href="https://en.cppreference.com/w/c/io/vfprintf"
+ * target="_blank">vsnprintf()</a>.
  */
 u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...);
 
@@ -150,15 +198,23 @@ u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...);
 //
 
 /**
- * @brief Compares two strings.
+ * @brief Compare two \ref string.
  *
- * @details Compare the length and the data of the 2 strings to check if they're
- * equal.
+ * @details Compare the length and the base of 2 \ref string to check if
+ * they're equal using <a
+ * href="https://en.cppreference.com/w/c/string/byte/memcmp"
+ * target="_blank">memcmp()</a>.
  *
- * @param first The first string to compare.
- * @param second The second string to compare.
+ * @param first The first \ref string to compare.
+ * @param second The second \ref string to compare.
  *
- * @return True if the strings are equal, false if they're not.
+ * @pre @c first and @c second must be valid and cannot be `null`.
+ *
+ * @return True if equal, false if not.
+ *
+ * @see \ref string, <a
+ * href="https://en.cppreference.com/w/c/string/byte/memcmp"
+ * target="_blank">memcmp()</a>
  */
 b32 stringcmp(const string *first, const string *second);
 
@@ -171,7 +227,7 @@ b32 stringcmp(const string *first, const string *second);
  * @param second The second string to compare.
  * @param len The length of the bytes to compare.
  *
- * @return True if the strings are equal, false if they're not.
+ * @return True if the \ref strings are equal, false if they're not.
  */
 b32 stringcmpb(const string *first, const string *second, const u64 len);
 
@@ -180,15 +236,19 @@ b32 stringcmpb(const string *first, const string *second, const u64 len);
 //
 
 /**
- * @brief Splits a string by a delimiter.
+ * @brief Splits a \ref string by a delimiter.
  *
- * @details Splits a string by a delimiter, creating a dynamic array of strings
- * in the darray param.
+ * @details Create a dynamic array of \ref string in @c darray seperated by @c
+ * delim.
  *
- * @param src The string to split.
+ * @param src The \ref string to split.
  * @param delim The delimiter to split by.
  * @param darray The dynamic array to store the split strings in.
- * @param arena The arena to allocate the dynamic array from.
+ * @param arena The \ref arena to allocate the dynamic array from.
+ *
+ * @pre
+ * - @c src, @c darray, and @c arena must be valid and cannot be `null`.
+ * - @c delim must be greater than 0.
  *
  * @return The length of the dynamic array.
  */
@@ -199,23 +259,29 @@ u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena);
 //
 
 /**
- * @brief Trims whitespace from the start and end of a string.
+ * @brief Trims whitespace from the start and end of a \ref string.
  *
- * @param str The string to trim.
+ * @param str the \ref string to trim.
+ *
+ * @pre @c str must be valid and cannot be `null`.
  */
 void string_trim(string *str);
 
 /**
- * @brief Trims whitespace from the start of a string.
+ * @brief Trims whitespace from the start of a \ref string.
  *
- * @param str The string to trim.
+ * @param str the \ref string to trim.
+ *
+ * @pre @c str must be valid and cannot be `null`.
  */
 void string_trim_left(string *str);
 
 /**
- * @brief Trims whitespace from the end of a string.
+ * @brief Trims whitespace from the end of a \ref string.
  *
- * @param str The string to trim.
+ * @param str the \ref string to trim.
+ *
+ * @pre @c str must be valid and cannot be `null`.
  */
 void string_trim_right(string *str);
 
@@ -224,10 +290,12 @@ void string_trim_right(string *str);
 //
 
 /**
- * @brief Finds the first occurance of a character in a string.
+ * @brief Finds the first occurance of a character in a \ref string.
  *
- * @param haystack The string to search in.
+ * @param haystack the \ref string to search in.
  * @param needle The character to search for.
+ *
+ * @pre @c haystack and @c needle must be valid and cannot be `null`.
  *
  * @return The index of the first occurance of the character, or -1 if
  * not.
@@ -235,12 +303,15 @@ void string_trim_right(string *str);
 i64 string_findc(string *haystack, u8 needle);
 
 /**
- * @brief Finds the first occurance of a string in a string.
+ * @brief Finds the first occurance of a \ref string in a \ref string.
  *
- * @param haystack The string to search in.
- * @param needle The string to search for.
+ * @param haystack the \ref string to search in.
+ * @param needle the \ref string to search for.
  *
- * @return The index of the first occurance of the string, or -1 if not found.
+ * @pre @c haystack and @c needle must be valid and cannot be `null`.
+ *
+ * @return The index of the first occurance of the \ref string, or -1 if not
+ * found.
  */
 i64 string_find_sstr(string *haystack, string *needle);
 

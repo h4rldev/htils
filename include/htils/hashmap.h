@@ -9,43 +9,73 @@
 //
 //
 
-enum hashmap_entry_state {
+/**
+ * @brief The state of a hashmap entry.
+ *
+ * @param EMPTY The entry is empty.
+ * @param OCCUPIED The entry is occupied.
+ * @param DEAD The entry is dead.
+ */
+typedef enum hashmap_entry_state {
   EMPTY,
   OCCUPIED,
   DEAD,
-};
-typedef enum hashmap_entry_state hashmap_entry_state_t;
+} hashmap_entry_state_t;
 
-enum hashmap_result {
+/**
+ *
+ * @brief The result of a hashmap operation.
+ *
+ * @param CREATED The entry was created.
+ * @param UPDATED The entry was updated.
+ *
+ * @param NOT_FOUND The entry was not found.
+ * @param KILLED The entry was killed.
+ */
+typedef enum hashmap_result {
   CREATED,
   UPDATED,
 
   NOT_FOUND,
   KILLED,
-};
-typedef enum hashmap_result hashmap_result_t;
+} hashmap_result_t;
 
-typedef struct hashmap_entry hashmap_entry_t;
-struct hashmap_entry {
+/**
+ * @brief A hashmap entry.
+ *
+ * @param key The key of the entry.
+ * @param value The value of the entry.
+ * @param state The state of the entry.
+ */
+typedef struct hashmap_entry {
   string *key;
   void *value;
   enum hashmap_entry_state state;
-};
+} hashmap_entry_t;
 
-typedef struct hashmap hashmap_t;
-struct hashmap {
+/**
+ * @brief A hashmap.
+ *
+ * @param arena The \ref arena to allocate from.
+ * @param entries The entries of the \ref hashmap.
+ * @param capacity The capacity of the \ref hashmap.
+ * @param count The amount of entries in the \ref hashmap.
+ * @param dead_entries The amount of dead entries of the \ref hashmap.
+ */
+typedef struct hashmap {
   arena_t *arena;
   hashmap_entry_t *entries;
 
   u64 capacity;
   u64 count;
   u64 dead_entries;
-};
+} hashmap_t;
 
 //
 //
 //
 
+/** Optionally use a nullable type for hashmaps. */
 #ifdef USE_NULLABLE_TYPES
 typedef hashmap_t hashmap_nullable_t;
 #endif
@@ -55,13 +85,16 @@ typedef hashmap_t hashmap_nullable_t;
 //
 
 /**
- * @brief Creates a new hashmap.
+ * @brief Initializes a new hashmap.
  *
- * @details Creates a new hashmap, with the given capacity, and arena, if the
- * given capacity is 0, it will use the built in default capacity.
+ * @details With the @c capacity, and @c arena, if the
+ * given capacity is 0, it will use the built in default capacity, which is
+ * `16`.
  *
- * @param arena The arena to allocate from.
- * @param capacity The capacity of the hashmap.
+ * @param arena The \ref arena to allocate from.
+ * @param capacity The capacity of the \ref hashmap.
+ *
+ * @pre @c arena must be valid and cannot be `null`.
  *
  * @return A pointer to the new hashmap.
  */
@@ -72,14 +105,19 @@ hashmap_t *hashmap_new(arena_t *arena, const u64 capacity);
 //
 
 /**
- * @brief Insert a K/V into the hashmap.
+ * @brief Insert @c key and @c value into the \ref hashmap.
  *
- * @details Inserts a K/V into the hashmap, if the key already exists, it will
- * be updated, if the capacity is too small, it will be automatically grown.
+ * @details Hashes and duplicates the key and sets the value, if the key already
+ * exists, it will be updated, if the capacity is too small, it will be
+ * automatically grown.
  *
- * @param hashmap The hashmap to insert into.
+ * @param hashmap The \ref hashmap to insert into.
  * @param key The key to insert.
  * @param value The value to associate with the key.
+ *
+ * @pre
+ * - @c hashmap and @c key must be valid and cannot be `null`.
+ * - @c value can be `null`, but there's really no reason to.
  *
  * @return The result of the insert (which will be either CREATED or UPDATED in
  * this case).
@@ -88,13 +126,15 @@ hashmap_result_t hashmap_insert(hashmap_t *hashmap, const string *key,
                                 const void *value);
 
 /**
- * @brief Remove / Kill a K/V from the hashmap.
+ * @brief Remove / Kill entry at @c key from the \ref hashmap.
  *
- * @details Removes a K/V from the hashmap, if the key doesn't exist, it will
+ * @details Marks an entry as DEAD, if the key doesn't exist, it will
  * return NOT_FOUND, otherwise it will return KILLED.
  *
- * @param hashmap The hashmap to remove from.
+ * @param hashmap The \ref hashmap to remove from.
  * @param key The key to remove.
+ *
+ * @pre @c hashmap and @c key must be valid and cannot be `null`.
  *
  * @return The result of the remove (which will be either KILLED or NOT_FOUND in
  * this case).
@@ -106,13 +146,15 @@ hashmap_result_t hashmap_kill(hashmap_t *hashmap, const string *key);
 //
 
 /**
- * @brief Get a V from the hashmap.
+ * @brief Get a V from the \ref hashmap.
  *
- * @details Gets an entry from the hashmap, if the entry doesn't exist, it will
- * be null.
+ * @details Gets an entry from the \ref hashmap, if the entry doesn't exist, it
+ * will be null.
  *
- * @param hashmap The hashmap to get from.
+ * @param hashmap The \ref hashmap to get from.
  * @param key The key to get.
+ *
+ * @pre @c hashmap and @c key must be valid and cannot be `null`.
  *
  * @return The value associated with the key, or null if it doesn't exist or is
  * dead.

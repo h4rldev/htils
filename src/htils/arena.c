@@ -16,10 +16,22 @@
 #define MIN(a, b) ((a < b) ? a : b)
 #define MAX(a, b) ((a > b) ? a : b)
 
+/**
+ * @brief Aligns a number to a power of 2, if pow is a power of two.
+ *
+ * @details By adding pow - 1 to the number, and then masking out the rest to
+ * align properly.
+ *
+ * @param num The number to align.
+ * @param pow The power of 2 to align to.
+ */
 #define ALIGN_POW2(num, pow)                                                   \
   (((u64)(num) + ((u64)(pow) - 1)) & (~((u64)(pow) - 1)))
 
+/** The base position of an arena. */
 #define ARENA_BASE_POS (sizeof(arena_t))
+
+/** The alignment of an arena, which is the alignment of max_align_t. */
 #define ARENA_ALIGNMENT (_Alignof(max_align_t))
 
 //
@@ -32,7 +44,6 @@
 //
 //
 
-#include <stdbool.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -40,18 +51,21 @@
 //
 //
 
-/*
+/**
  * @brief Gets the page size of the system.
+ *
+ * @details By getting the page size using `sysconf()`, then returning the
+ * result.
  *
  * @return The page size of the system.
  */
 static u32 get_page_size(void) { return (u32)sysconf(_SC_PAGESIZE); }
 
-/*
+/**
  * @brief Reserves a chunk of memory from the system.
  *
- * @details This function reserves a private and anonymous memory mapping, with
- * no protections.
+ * @details By reserving a private and anonymous memory mapping, with no
+ * protections using `mmap()`.
  *
  * @param size The size of the chunk to reserve.
  *
@@ -65,53 +79,52 @@ static void *mem_reserve(u64 size) {
   return ret;
 }
 
-/*
+/**
  * @brief Releases a chunk of memory from the system.
  *
- * @details This function releases a memory mapping, with
- * munmap.
+ * @details By releasing a memory mapping `ptr` of `size`, using `munmap()`.
  *
  * @param ptr The pointer to the memory to release.
  * @param size The size of the memory to release.
  *
  * @return True if the memory was released, false if it failed.
  */
-static bool mem_release(void *ptr, u64 size) {
+static b32 mem_release(void *ptr, u64 size) {
   htils_assert(ptr != null && "Pointer cannot be null.");
   htils_assert(size > 0 && "Size must be greater than 0.");
 
   return (i32)munmap(ptr, size) == 0;
 }
 
-/*
+/**
  * @brief Commits a chunk of memory to the system.
  *
- * @details This function commits a memory mapping, with
- * READ and WRITE premissions, basically making a memory map usable.
+ * @details By committing a memory mapping, with READ and WRITE premissions,
+ * basically making a memory map usable through `mprotect()`.
  *
  * @param ptr The pointer to the memory to commit.
  * @param size The size of the memory to commit.
  *
  * @return True if the memory was committed, false if it failed.
  */
-static bool mem_commit(void *ptr, u64 size) {
+static b32 mem_commit(void *ptr, u64 size) {
   htils_assert(ptr != null && "Pointer cannot be null.");
   htils_assert(size > 0 && "Size must be greater than 0.");
   return (i32)mprotect(ptr, size, PROT_READ | PROT_WRITE) == 0;
 }
 
-/*
+/**
  * @brief Decommits a chunk of memory from the system.
  *
- * @details This function decommits a memory mapping, by
- * first removing the protections, and then advising that it's unneeded heap.
+ * @details By first removing the protections using `mprotect()`, and then
+ * advising that it's unneeded heap using `madvise()`.
  *
  * @param ptr The pointer to the memory to decommit.
  * @param size The size of the memory to decommit.
  *
  * @return True if the memory was decommitted, false if it failed.
  */
-static bool mem_decommit(void *ptr, u64 size) {
+static b32 __attribute__((unused)) mem_decommit(void *ptr, u64 size) {
   htils_assert(ptr != null && "Pointer cannot be null.");
   htils_assert(size > 0 && "Size must be greater than 0.");
 
@@ -130,18 +143,17 @@ static bool mem_decommit(void *ptr, u64 size) {
 //
 //
 
-#include <stdbool.h>
 #include <windows.h>
 
 //
 //
 //
 
-/*
+/**
  * @brief Gets the page size of the system.
  *
- * @details Uses GetSystemInfo to retrieve system info, including the page size,
- * then returns the dwPageSize field.
+ * @details Using `GetSystemInfo()` to retrieve system info, including the page
+ * size, then returns the `dwPageSize` field.
  *
  * @return The page size of the system.
  */
@@ -151,11 +163,11 @@ static u32 get_page_size(void) {
   return (u32)sys_info.dwPageSize;
 }
 
-/*
+/**
  * @brief Reserves a chunk of memory from the system.
  *
- * @details This function reserves virtual address space, with
- * VirtualAlloc.
+ * @details By reserving virtual address space of `size`, using
+ * `VirtualAlloc()`.
  *
  * @param size The size of the chunk to reserve.
  *
@@ -169,11 +181,11 @@ static void *mem_reserve(u64 size) {
   return ret;
 }
 
-/*
+/**
  * @brief Releases a chunk of memory from the system.
  *
- * @details This function releases the virtual address space,
- * with VirtualFree.
+ * @details By releasing the virtual address space of `ptr` using
+ * `VirtualFree()`, `size` is kept for making it API-compatible across systems.
  *
  * @param ptr The pointer to the memory to release.
  * @param size The size of the memory to release.
@@ -183,25 +195,25 @@ static void *mem_reserve(u64 size) {
  *
  * @return True if the memory was released, false if it failed.
  */
-static bool mem_release(void *ptr, u64 size) {
+static b32 mem_release(void *ptr, u64 size) {
   htils_assert(ptr != null && "Pointer cannot be null.");
 
   (void)size;
   return (i32)VirtualFree(ptr, 0, MEM_RELEASE) != 0;
 }
 
-/*
+/**
  * @brief Commits a chunk of memory to the system.
  *
- * @details This function commits the virtual address space, with
- * VirtualAlloc.
+ * @details This function commits the virtual address space of `ptr`, with
+ * `size` using `VirtualAlloc()`.
  *
  * @param ptr The pointer to the memory to commit.
  * @param size The size of the memory to commit.
  *
  * @return True if the memory was committed, false if it failed.
  */
-static bool mem_commit(void *ptr, u64 size) {
+static b32 mem_commit(void *ptr, u64 size) {
   htils_assert(ptr != null && "Pointer cannot be null.");
   htils_assert(size > 0 && "Size must be greater than 0.");
 
@@ -209,19 +221,20 @@ static bool mem_commit(void *ptr, u64 size) {
   return ret != NULL;
 }
 
-/*
+/**
  * @brief Decommits a chunk of memory from the system.
  *
- * @details This function decommits the virtual address space, with VirtualFree.
+ * @details By decommitting the virtual address space using `VirtualFree()`,
+ * `size` is unused and only there for API-compatibility across systems.
  *
  * @param ptr The pointer to the memory to decommit.
  * @param size The size of the memory to decommit.
  *
  * @return True if the memory was decommitted, false if it failed.
  */
-static bool mem_decommit(void *ptr, u64 size) {
+static __attribute__((unused)) b32 mem_decommit(void *ptr, u64 size) {
+  (void)size;
   htils_assert(ptr != null && "Pointer cannot be null.");
-  htils_assert(size > 0 && "Size must be greater than 0.");
 
   return (i32)VirtualFree(ptr, 0, MEM_DECOMMIT) != 0;
 }
@@ -315,19 +328,13 @@ void __arena_dealloc(struct arena *arena, u64 size) {
 void arena_dealloc_to(arena_t *arena, u64 pos) {
   htils_assert(arena != null && "Arena cannot be null.");
 
-  u64 size = pos < arena->pos ? arena->pos - pos : 0;
+  u64 size = pos < arena->pos ? arena->pos - pos : ARENA_BASE_POS;
   __arena_dealloc(arena, size);
 }
 
 void arena_clear(arena_t *arena) {
   htils_assert(arena != null && "Arena cannot be null.");
   arena_dealloc_to(arena, ARENA_BASE_POS);
-
-  htils_assert(mem_decommit(arena, arena->commit_pos) &&
-               "Failed to decommit memory.");
-  htils_assert(mem_commit(arena, arena->committed) &&
-               "Failed to recommit memory.");
-  arena->commit_pos = arena->committed;
 }
 
 //

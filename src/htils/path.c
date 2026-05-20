@@ -1,3 +1,5 @@
+#include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,6 +11,16 @@
 #include <htils/assert.h>
 #include <htils/path.h>
 #include <htils/string.h>
+
+#if defined(_WIN32)
+#include <shellapi.h>
+#include <windows.h>
+#elif defined(__linux__)
+#include <sys/stat.h>
+#include <unistd.h>
+#else
+#error "Unsupported platform."
+#endif
 
 //
 //
@@ -195,4 +207,97 @@ string *path_join(arena_t *arena, const string *first, const string *second) {
     memcpy(dst, second->base, second->len);
 
   return out;
+}
+
+//
+//
+//
+
+b32 make_dir(const string *path) {
+  htils_assert(path && "Path cannot be null.");
+  htils_assert(path->len > 0 && "Path cannot be empty.");
+
+#if defined(__linux__)
+  int res = mkdir(string_to_cstr(path), 0755);
+  return res == 0;
+#elif defined(_WIN32)
+  int res = CreateDirectory(string_to_cstr(path), null);
+  return res != 0;
+#else
+#error "Unsupported platform."
+#endif
+}
+
+b32 does_path_exist(const string *path) {
+  htils_assert(path && "Path cannot be null.");
+  htils_assert(path->len > 0 && "Path cannot be empty.");
+
+#if defined(__linux__)
+  struct stat sb;
+  return stat(string_to_cstr(path), &sb) == 0;
+#elif defined(_WIN32)
+  DWORD attrs = GetFileAttributes(string_to_cstr(path));
+  return attrs != INVALID_FILE_ATTRIBUTES;
+#else
+#error "Unsupported platform."
+#endif
+}
+
+#if defined(_WIN32)
+
+/** Type-alias of wchar_t to wcstr for type similarity reasons */
+typedef wchar_t wcstr;
+
+/**
+ * @brief Converts a cstr to a wcstr.
+ *
+ * @details By converting the cstr to a wcstr using `MultiByteToWideChar()` with
+ * the `CP_ACP` code page, making sure the size is correct.
+ *
+ * @param arena The arena to allocate the wcstr from.
+ * @param cstr The cstr to convert.
+ *
+ * @return The converted wcstr.
+ */
+wcstr *cstr_to_wcstr(arena_t *arena, const cstr *cstr) {
+  htils_assert(cstr != null && "CStr cannot be null.");
+
+  UINT code_page = CP_ACP;
+  u64 size_needed = MultiByteToWideChar(code_page, 0, cstr, -1, null, 0);
+  htils_assert(size_needed > 0 && "Failed to get size for wcstr.");
+
+  wcstr *out = arena_alloc(arena, wcstr, size_needed);
+  htils_assert(MultiByteToWideChar(code_page, 0, cstr, -1, out, size_needed) >
+                   0 &&
+               "Failed to convert cstr to wcstr.");
+
+  return out;
+}
+
+#endif
+
+b32 path_remove(const string *path) {
+  htils_assert(path != null && "Path cannot be null.");
+  htils_assert(path->len > 0 && "Path cannot be empty.");
+
+#if defined(__linux__)
+  return remove(string_to_cstr(path)) == 0;
+#elif defined(_WIN32)
+  cstr *path_cstr = string_to_cstr(path);
+  wcstr *path_wstr = cstr_to_wcstr(arena, path_cstr);
+
+  wcstr sz_buf[MAX_PATH + 2];
+  wcsncpy_s(sz_buf, MAX_PATH + 1, path_wcstr, _TRUNCATE);
+  sz_buf[wcslen(sz_buf) + 1] = L'\0';
+
+  SHFILEOPSTRUCTW fop = {0};
+  fop.wFunc = FO_DELETE;
+  fop.pFrom = sz_buf;
+  fop.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
+  fop.fFlags |= FOF_ALLOWUNDO;
+
+  return (SHFileOperationW(&fop) == 0 && !fop.fAnyOperationsAborted);
+#else
+#error "Unsupported platform."
+#endif
 }

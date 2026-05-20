@@ -130,7 +130,7 @@ u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...) {
 
   u8 *buf = arena_alloc(temp.arena, u8, fmt_len_w_args + 1);
   va_start(args, fmt);
-  u64 written = vsnprintf((cstr *)buf, fmt_len_w_args, fmt, args);
+  u64 written = vsnprintf((cstr *)buf, fmt_len_w_args + 1, fmt, args);
   va_end(args);
 
   htils_assert(written == fmt_len_w_args && "Failed to write to buffer.");
@@ -191,8 +191,6 @@ u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena) {
 
   for (u8 *p = start; p <= end; p++) {
     if (p == end || *p == delim) {
-      fprintf(stderr, "Appending...\n");
-
       string *slice = string_new(arena, (u64)(p - start));
       slice->len = (u64)(p - start);
       slice->base = start;
@@ -247,6 +245,37 @@ void string_trim_right(string *str) {
   }
 
   str->len = (u64)(end - start);
+}
+
+//
+//
+//
+
+i64 string_findc(string *haystack, u8 needle) {
+  htils_assert(haystack != null && "Haystack cannot be null.");
+  htils_assert(haystack->len > 0 && "Haystack cannot be empty.");
+  htils_assert(needle > 0 && "Needle cannot be empty.");
+
+  for (u8 *p = haystack->base; p < haystack->base + haystack->len; p++) {
+    if (*p == needle)
+      return (i64)(p - haystack->base);
+  }
+
+  return -1;
+}
+
+i64 string_find_sstr(string *haystack, string *needle) {
+  htils_assert(haystack != null && "Haystack cannot be null.");
+  htils_assert(needle != null && "Needle cannot be null.");
+  htils_assert(haystack->len > 0 && "Haystack cannot be empty.");
+  htils_assert(needle->len > 0 && "Needle cannot be empty.");
+
+  for (u8 *p = haystack->base; p < haystack->base + haystack->len; p++) {
+    if (memcmp(string_to_cstr(needle), &(*p), needle->len) == 0)
+      return (i64)(p - haystack->base);
+  }
+
+  return -1;
 }
 
 /// :P

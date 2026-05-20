@@ -5,7 +5,7 @@
 //
 //
 
-/** For using the gnu extension program_invocation_short_name */
+/** For using the GNU extension `program_invocation_short_name` */
 #define _GNU_SOURCE
 
 //
@@ -35,17 +35,21 @@ extern cstr *program_invocation_short_name;
 /**
  * @brief Terminates the program with an error message.
  *
- * @details This function terminates the program with an error message, this is
- * used instead of normal assert cause assert uses abort.
+ * @details Prints the error message to stderr, and then terminates the program
+ * using <a href="https://en.cppreference.com/c/program/exit"
+ * target="_blank">exit()</a>.
  *
  * @note This function should never be run directly, and is run by
- * `htils_assert` on a failed assertion.
+ * \ref htils_assert() on a failed assertion.
  *
  * @param expr_str The expression as string.
  * @param executable The executable name.
  * @param file The file name.
  * @param line The line number.
  * @param func The function name.
+ *
+ * @see \ref htils_assert(), <a
+ * href="https://en.cppreference.com/c/program/exit" target="_blank">exit()</a>
  */
 _Noreturn void __htils_assert_fail(const cstr *expr_str, const cstr *executable,
                                    const cstr *file, u32 line,

@@ -5,5 +5,9 @@ lib
 out
 bin
 doc
+tests_out
+
+result
+result-*
 
 compile_commands.json

@@ -10,21 +10,6 @@
 #include <htils/file.h>
 #include <htils/string.h>
 
-#if defined(_WIN32)
-#include <windows.h>
-
-#define fseek64 _fseeki64
-#define ftell64 _ftelli64
-#elif defined(__linux__)
-#include <sys/stat.h>
-#include <unistd.h>
-
-#define fseek64 fseeko
-#define ftell64 ftello
-#else
-#error "Unsupported platform."
-#endif
-
 //
 //
 //
@@ -62,6 +47,7 @@ u64 file_size(const string *path) {
 
 string *read_file_from_stream(arena_t *arena, FILE *stream) {
   htils_assert(arena && "Arena cannot be null.");
+
   htils_assert(stream && "Stream cannot be null.");
 
   u64 size = file_size_stream(stream);
@@ -178,38 +164,4 @@ u64 write_to_file_bytes(const string *path, const string *contents,
   fclose(stream);
 
   return written;
-}
-
-//
-//
-//
-
-b32 make_dir(const string *path) {
-  htils_assert(path && "Path cannot be null.");
-  htils_assert(path->len > 0 && "Path cannot be empty.");
-
-#if defined(__linux__)
-  int res = mkdir(string_to_cstr(path), 0755);
-  return res == 0;
-#elif defined(_WIN32)
-  int res = CreateDirectory(string_to_cstr(path), null);
-  return res != 0;
-#else
-#error "Unsupported platform."
-#endif
-}
-
-b32 does_path_exist(const string *path) {
-  htils_assert(path && "Path cannot be null.");
-  htils_assert(path->len > 0 && "Path cannot be empty.");
-
-#if defined(__linux__)
-  struct stat sb;
-  return stat(string_to_cstr(path), &sb) == 0;
-#elif defined(_WIN32)
-  DWORD attrs = GetFileAttributes(string_to_cstr(path));
-  return attrs != INVALID_FILE_ATTRIBUTES;
-#else
-#error "Unsupported platform."
-#endif
 }

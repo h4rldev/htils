@@ -43,17 +43,20 @@ hashmap_t *hashmap_new(arena_t *arena, const u64 capacity) {
 //
 //
 
-/*
+/**
  * @brief Hash a key into an index.
  *
  * @details Hashes a key into an index, using the FNV-1a algorithm.
  *
  * @param key The key to hash.
  *
+ * @pre @c key must be valid and cannot be `null`.
+ *
  * @return The hash generated from the key.
  */
 static u64 hash_key(const string *key) {
   htils_assert(key != null && "Key cannot be null.");
+  htils_assert(key->len > 0 && "Key cannot be empty.");
 
   u64 hash = 14695981039346656037ULL; // FNV-1a
 
@@ -65,13 +68,15 @@ static u64 hash_key(const string *key) {
   return hash;
 }
 
-/*
+/**
  * @brief Grow a hashmap if it's too small.
  *
- * @details Grows a hashmap if it's too small, by doubling the capacity, and
- * copying over all occupied entries.
+ * @details By doubling the capacity, allocating a new block using \ref
+ * arena_alloc(), and copying over all occupied entries.
  *
  * @param map The hashmap to grow.
+ *
+ * @pre @c map must be valid and cannot be `null`.
  */
 static void hashmap_grow(hashmap_t *map) {
   htils_assert(map != null && "Hashmap cannot be null.");
