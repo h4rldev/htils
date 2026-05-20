@@ -179,7 +179,6 @@ compile-test type="debug" force="false" threads=num_cpus():
 link-test type="debug" static="dynamic":
     #!/usr/bin/env bash
     shopt -s globstar
-    set -x
 
     [[ -d {{ test_out }} ]] || just compile-test {{ type }}
     [[ -d {{ bin }} ]] || mkdir -p {{ bin }}
