@@ -27,7 +27,7 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
   - `ucstr`
   - `null`
 - A small and flexible reserve and commit arena.
-  > Available through arena_new, arena_alloc, etc.
+  > Available through htils/arena.h
 - A string type based on unsigned 8bit integers, with tons of features for its manipulation.
   > Available through htils/string.h
 - A custom assert that uses exit() instead of abort().
@@ -75,7 +75,7 @@ just debug
 
 ## Todos
 
-- [ ] - Nix package.
+- [x] - Nix package.
 - [ ] - More features.
 
 ## License
