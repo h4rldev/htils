@@ -28,6 +28,12 @@ typedef int32_t i32;
 /** Alias of int64_t for better naming conventions. */
 typedef int64_t i64;
 
+/** Alias of float for better naming conventions. */
+typedef float f32;
+
+/** Alias of double for better naming conventions. */
+typedef double f64;
+
 /** Make bool more platform efficient */
 typedef u32 b32;
 
