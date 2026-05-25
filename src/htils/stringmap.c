@@ -1,3 +1,5 @@
+#include <string.h>
+
 //
 //
 //
@@ -5,8 +7,8 @@
 #include <htils/arena.h>
 #include <htils/assert.h>
 #include <htils/basictypes.h>
-#include <htils/hashmap.h>
 #include <htils/string.h>
+#include <htils/stringmap.h>
 
 #define DEFAULT_CAPACITY 16
 
@@ -14,17 +16,17 @@
 //
 //
 
-hashmap_t *hashmap_new(arena_t *arena, const u64 capacity) {
+stringmap_t *sm_new(arena_t *arena, const u64 capacity) {
   htils_assert(arena != null && "Arena cannot be null.");
 
-  hashmap_t *map = arena_alloc(arena, hashmap_t, 1);
+  stringmap_t *map = arena_alloc(arena, stringmap_t, 1);
   map->arena = arena;
 
   if (capacity > 0) {
-    map->entries = arena_alloc(arena, hashmap_entry_t, capacity);
+    map->entries = arena_alloc(arena, stringmap_entry_t, capacity);
     map->capacity = capacity;
   } else {
-    map->entries = arena_alloc(arena, hashmap_entry_t, DEFAULT_CAPACITY);
+    map->entries = arena_alloc(arena, stringmap_entry_t, DEFAULT_CAPACITY);
     map->capacity = DEFAULT_CAPACITY;
   }
 
@@ -69,46 +71,46 @@ static u64 hash_key(const string *key) {
 }
 
 /**
- * @brief Grow a hashmap if it's too small.
+ * @brief Grow a stringmap if it's too small.
  *
  * @details By doubling the capacity, allocating a new block using \ref
  * arena_alloc(), and copying over all occupied entries.
  *
- * @param map The hashmap to grow.
+ * @param map The stringmap to grow.
  *
  * @pre @c map must be valid and cannot be `null`.
  */
-static void hashmap_grow(hashmap_t *map) {
-  htils_assert(map != null && "Hashmap cannot be null.");
+static void sm_grow(stringmap_t *map) {
+  htils_assert(map != null && "stringmap cannot be null.");
 
   u64 old_capacity = map->capacity;
-  hashmap_entry_t *old_entries = map->entries;
+  stringmap_entry_t *old_entries = map->entries;
 
   map->capacity *= 2;
-  map->entries = arena_alloc(map->arena, hashmap_entry_t, map->capacity);
+  map->entries = arena_alloc(map->arena, stringmap_entry_t, map->capacity);
 
   for (u64 i = 0; i < old_capacity; i++)
     if (old_entries[i].state == OCCUPIED)
-      hashmap_insert(map, old_entries[i].key, old_entries[i].value);
+      sm_insert(map, old_entries[i].key, (cstr *)old_entries[i].value);
 }
 
 //
 //
 //
 
-hashmap_result_t hashmap_insert(hashmap_t *map, const string *key,
-                                const void *value) {
-  htils_assert(map != null && "Hashmap cannot be null.");
+stringmap_result_t __sm_insert(stringmap_t *map, const string *key,
+                               const void *value, const u64 vsize) {
+  htils_assert(map != null && "stringmap cannot be null.");
   htils_assert(key != null && "Key cannot be null.");
 
   if ((map->count + map->dead_entries) >= (map->capacity * 0.75))
-    hashmap_grow(map);
+    sm_grow(map);
 
   u64 idx = hash_key(key) % map->capacity;
   u64 first_tombstone = UINT64_MAX;
 
   for (;;) {
-    hashmap_entry_t *entry = &map->entries[idx];
+    stringmap_entry_t *entry = &map->entries[idx];
     switch (entry->state) {
     case EMPTY:
       if (first_tombstone != UINT64_MAX) {
@@ -118,7 +120,8 @@ hashmap_result_t hashmap_insert(hashmap_t *map, const string *key,
       }
 
       entry->key = string_dup(map->arena, key);
-      entry->value = (void *)value;
+      entry->value = __arena_alloc(map->arena, vsize);
+      memcpy(entry->value, value, vsize);
       entry->state = OCCUPIED;
       map->count++;
       return CREATED;
@@ -129,7 +132,9 @@ hashmap_result_t hashmap_insert(hashmap_t *map, const string *key,
       break;
     case OCCUPIED:
       if (stringcmp(entry->key, key)) {
-        entry->value = (void *)value;
+        entry->value = __arena_alloc(map->arena, vsize);
+        memcpy(entry->value, value, vsize);
+        entry->vsize = vsize;
         return UPDATED;
       }
     }
@@ -137,8 +142,8 @@ hashmap_result_t hashmap_insert(hashmap_t *map, const string *key,
   }
 }
 
-hashmap_result_t hashmap_kill(hashmap_t *map, const string *key) {
-  htils_assert(map != null && "Hashmap cannot be null.");
+stringmap_result_t sm_kill(stringmap_t *map, const string *key) {
+  htils_assert(map != null && "stringmap cannot be null.");
   htils_assert(key != null && "Key cannot be null.");
   htils_assert(key->len > 0 && "Key cannot be empty.");
 
@@ -146,7 +151,7 @@ hashmap_result_t hashmap_kill(hashmap_t *map, const string *key) {
   u64 guard = map->capacity;
 
   while (guard--) {
-    hashmap_entry_t *entry = &map->entries[idx];
+    stringmap_entry_t *entry = &map->entries[idx];
     switch (entry->state) {
     case EMPTY:
       return NOT_FOUND;
@@ -157,6 +162,7 @@ hashmap_result_t hashmap_kill(hashmap_t *map, const string *key) {
         entry->state = DEAD;
         entry->key = null;
         entry->value = null;
+        entry->vsize = 0;
         map->dead_entries++;
         map->count--;
         return KILLED;
@@ -173,8 +179,8 @@ hashmap_result_t hashmap_kill(hashmap_t *map, const string *key) {
 //
 //
 
-void *hashmap_get(hashmap_t *map, const string *key) {
-  htils_assert(map != null && "Hashmap cannot be null.");
+void *sm_get(stringmap_t *map, const string *key) {
+  htils_assert(map != null && "stringmap cannot be null.");
   htils_assert(key != null && "Key cannot be null.");
   htils_assert(key->len > 0 && "Key cannot be empty.");
 
@@ -182,7 +188,7 @@ void *hashmap_get(hashmap_t *map, const string *key) {
   u64 guard = map->capacity;
 
   while (guard--) {
-    hashmap_entry_t *entry = &map->entries[idx];
+    stringmap_entry_t *entry = &map->entries[idx];
     switch (entry->state) {
     case EMPTY:
     case DEAD:

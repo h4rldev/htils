@@ -4,9 +4,9 @@
 #include <htils/basictypes.h>
 #include <htils/darray.h>
 #include <htils/file.h>
-#include <htils/hashmap.h>
 #include <htils/path.h>
 #include <htils/string.h>
+#include <htils/stringmap.h>
 #include <htils/test.h>
 
 #define REMOVE false
@@ -464,6 +464,80 @@ HTILS_TEST(temp_arena_free) {
 //
 //
 
+HTILS_TEST(stringmap_new) {
+  stringmap_t *map = sm_new(arena, 4);
+
+  HTILS_TEST_ASSERT(map, "Stringmap is null.");
+  HTILS_TEST_ASSERT(map->capacity == 4, "Stringmap capacity is not 4.");
+  HTILS_TEST_ASSERT(map->count == 0, "Stringmap size is not 0.");
+
+  return HTILS_TEST_PASS;
+}
+HTILS_TEST(stringmap_insert) {
+  stringmap_t *map = sm_new(arena, 4);
+  HTILS_TEST_ASSERT(map, "Stringmap is null.");
+  HTILS_TEST_ASSERT(map->capacity == 4, "Stringmap capacity is not 4.");
+  HTILS_TEST_ASSERT(map->count == 0, "Stringmap size is not 0.");
+
+  string *key = string_from_cstr(arena, "meow");
+  string *val = string_from_cstr(arena, "meow");
+  sm_insert(map, key, val);
+
+  HTILS_TEST_ASSERT(map, "Stringmap is null.");
+  HTILS_TEST_ASSERT(map->capacity == 4, "Stringmap capacity is not 8.");
+  HTILS_TEST_ASSERT(map->count == 1, "Stringmap size is not 1.");
+
+  return HTILS_TEST_PASS;
+}
+HTILS_TEST(stringmap_kill) {
+  stringmap_t *map = sm_new(arena, 4);
+  HTILS_TEST_ASSERT(map, "Stringmap is null.");
+  HTILS_TEST_ASSERT(map->capacity == 4, "Stringmap capacity is not 4.");
+  HTILS_TEST_ASSERT(map->count == 0, "Stringmap size is not 0.");
+
+  string *key = string_from_cstr(arena, "meow");
+  string *val = string_from_cstr(arena, "meow");
+
+  sm_insert(map, key, val);
+  HTILS_TEST_ASSERT(map, "Stringmap is null.");
+  HTILS_TEST_ASSERT(map->capacity == 4, "Stringmap capacity is not 8.");
+  HTILS_TEST_ASSERT(map->count == 1, "Stringmap size is not 1.");
+
+  sm_kill(map, key);
+  HTILS_TEST_ASSERT(map, "Stringmap is null.");
+  HTILS_TEST_ASSERT(map->capacity == 4, "Stringmap capacity is not 4.");
+  HTILS_TEST_ASSERT(map->count == 0, "Stringmap size is not 0.");
+  HTILS_TEST_ASSERT(map->dead_entries == 1, "Stringmap dead is not 1.");
+
+  return HTILS_TEST_PASS;
+}
+HTILS_TEST(stringmap_get) {
+  stringmap_t *map = sm_new(arena, 4);
+  HTILS_TEST_ASSERT(map, "Stringmap is null.");
+  HTILS_TEST_ASSERT(map->capacity == 4, "Stringmap capacity is not 4.");
+  HTILS_TEST_ASSERT(map->count == 0, "Stringmap size is not 0.");
+
+  string *key = string_from_cstr(arena, "meow");
+  string *val = string_from_cstr(arena, "meow");
+
+  sm_insert(map, key, val);
+  HTILS_TEST_ASSERT(map, "Stringmap is null.");
+  HTILS_TEST_ASSERT(map->capacity == 4, "Stringmap capacity is not 8.");
+  HTILS_TEST_ASSERT(map->count == 1, "Stringmap size is not 1.");
+
+  string *val2 = sm_get(map, key);
+  HTILS_TEST_ASSERT(val2, "Stringmap value is null.");
+  HTILS_TEST_ASSERT(val2->len == 4, "Stringmap value length is not 4.");
+  HTILS_TEST_ASSERT(memcmp(val2->base, "meow", 4) == 0,
+                    "Stringmap value is not 'meow'.");
+
+  return HTILS_TEST_PASS;
+}
+
+//
+//
+//
+
 HTILS_TEST(path_canonical) {
   string *path = string_from_cstr(arena, "./src/testing/main.c");
   HTILS_TEST_ASSERT(path, "Path is null.");
@@ -835,6 +909,11 @@ int main(void) {
 
   HTILS_TEST_RUN(temp_arena_new);
   HTILS_TEST_RUN(temp_arena_free);
+
+  HTILS_TEST_RUN(stringmap_new);
+  HTILS_TEST_RUN(stringmap_insert);
+  HTILS_TEST_RUN(stringmap_kill);
+  HTILS_TEST_RUN(stringmap_get);
 
   HTILS_TEST_RUN(path_canonical);
   HTILS_TEST_RUN(path_basename);
