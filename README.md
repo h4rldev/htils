@@ -40,6 +40,8 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
   > Available through htils/darray.h
 - File IO.
   > Available through htils/file.h
+- An easy to use cli parser.
+  > Available through htils/cli.h
 - A tiny test suite.
   > Available through htils/test.h
 
