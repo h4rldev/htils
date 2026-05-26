@@ -50,6 +50,8 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 > This library is mostly documented, so if you need help on how to use each respective api, read the header files in `./include`
 >
 > If you want a nice little documentation site, run doxygen in a clone of this repo and open index.html in `./doc/html`
+>
+> Edit: The documentation site is now deployed to [https://htils.h4rl.dev](https://htils.h4rl.dev)!
 
 ## Building
 
