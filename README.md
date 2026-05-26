@@ -32,8 +32,8 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
   > Available through htils/string.h
 - A custom assert that uses exit() instead of abort().
   > Available through htils/assert.h
-- A simple hashmap, that isn't super type-agnostic but works with pointer-types, (i'll work on a fully type-agnostic one at a later date.)
-  > Available through htils/hashmap.h
+- A simple stringmap, that isn't super type-agnostic, but it works well enough.
+  > Available through htils/stringmap.h
 - Path manipulation.
   > Available through htils/path.h
 - Type-agnostic dynamic arrays.
