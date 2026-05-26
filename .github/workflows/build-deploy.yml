@@ -1,0 +1,40 @@
+name: Deploy docs
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup doxygen
+        run: |
+          sudo apt update
+          sudo apt install doxygen
+
+      - name: Build docs
+        run: doxygen Doxyfile
+
+      - name: Check CLOUDFLARE_API_TOKEN
+        id: check-token
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+            echo "❌ Error: CLOUDFLARE_API_TOKEN is not set in secrets."
+            exit 1
+          fi
+
+      - name: Check CLOUDFLARE_ACCOUNT_ID
+        id: check-id
+        run: |
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+            echo "❌ Error: CLOUDFLARE_ACCOUNT_ID is not set in secrets."
+            exit 1
+          fi
+
+      - name: Deploy to Cloudflare Workers
+        run: bunx wrangler pages deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -130,6 +130,7 @@
           bear
           just
           doxygen
+          bun
 
           clang-tools
           nixd

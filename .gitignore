@@ -1,5 +1,6 @@
 .cache
 .direnv
+.wrangler
 
 lib
 out
