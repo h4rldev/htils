@@ -112,13 +112,17 @@ stringmap_t *sm_new(arena_t *arena, const u64 capacity);
  * exists, it will be updated, if the capacity is too small, it will be
  * automatically grown.
  *
+ * @note This function is not meant to be run directly, and is called by the
+ * \ref sm_ insert() macro.
+ *
  * @param stringmap The \ref stringmap to insert into.
  * @param key The key to insert.
  * @param value The value to associate with the key.
+ * @param vsize The size of the value.
  *
  * @pre
  * - @c stringmap and @c key must be valid and cannot be `null`.
- * - @c value can be `null`, but there's really no reason to.
+ * - @c value can't be `null`, as it would leave to a null dereference.
  *
  * @return The result of the insert (which will be either CREATED or UPDATED in
  * this case).

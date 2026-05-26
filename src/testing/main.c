@@ -2,6 +2,7 @@
 
 #include <htils/arena.h>
 #include <htils/basictypes.h>
+#include <htils/cli.h>
 #include <htils/darray.h>
 #include <htils/file.h>
 #include <htils/path.h>
@@ -873,7 +874,180 @@ HTILS_TEST(write_to_file_bytes) {
   return HTILS_TEST_PASS;
 }
 
-int main(void) {
+HTILS_TEST(cli_new) {
+  int argc = 2;
+  cstr *argv[2] = {"test", "test2"};
+
+  htils_cli_t *cli =
+      cli_new(arena, argc, argv, HTILS_STR("Test cli"),
+              HTILS_STR("This is a test cli program for testing cli.h"));
+
+  HTILS_TEST_ASSERT(cli, "Cli is null.");
+  HTILS_TEST_ASSERT(cli->argc == argc, "Cli argc is not 2.");
+  HTILS_TEST_ASSERT(memcmp(cli->argv, argv, argc * sizeof(cstr *)) == 0,
+                    "Cli argv is not correct.");
+  HTILS_TEST_ASSERT(cli->cli_name, "Cli name is null.");
+  HTILS_TEST_ASSERT(cli->cli_name->len > 0, "Cli name is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("Test cli"), cli->cli_name),
+                    "Cli name doesn't match.");
+  HTILS_TEST_ASSERT(cli->cli_desc, "Cli desc is null.");
+  HTILS_TEST_ASSERT(cli->cli_desc->len > 0, "Cli desc is empty.");
+  HTILS_TEST_ASSERT(
+      stringcmp(HTILS_STR("This is a test cli program for testing cli.h"),
+                cli->cli_desc),
+      "Cli desc doesn't match.");
+  HTILS_TEST_ASSERT(da_len(cli->options) == 0, "Cli options is not 0.");
+  HTILS_TEST_ASSERT(cli->arena == arena, "Cli arena is not the same.");
+
+  return HTILS_TEST_PASS;
+}
+
+HTILS_TEST(cli_add) {
+  int argc = 2;
+  cstr *argv[2] = {"-t", "-g"};
+
+  htils_cli_t *cli =
+      cli_new(arena, argc, argv, HTILS_STR("Test cli"),
+              HTILS_STR("This is a test cli program for testing cli.h"));
+
+  HTILS_TEST_ASSERT(cli, "Cli is null.");
+  HTILS_TEST_ASSERT(cli->argc == argc, "Cli argc is not 2.");
+  HTILS_TEST_ASSERT(memcmp(cli->argv, argv, argc * sizeof(cstr *)) == 0,
+                    "Cli argv is not correct.");
+  HTILS_TEST_ASSERT(cli->cli_name, "Cli name is null.");
+  HTILS_TEST_ASSERT(cli->cli_name->len > 0, "Cli name is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("Test cli"), cli->cli_name),
+                    "Cli name doesn't match.");
+  HTILS_TEST_ASSERT(cli->cli_desc, "Cli desc is null.");
+  HTILS_TEST_ASSERT(cli->cli_desc->len > 0, "Cli desc is empty.");
+  HTILS_TEST_ASSERT(
+      stringcmp(HTILS_STR("This is a test cli program for testing cli.h"),
+                cli->cli_desc),
+      "Cli desc doesn't match.");
+  HTILS_TEST_ASSERT(da_len(cli->options) == 0, "Cli options is not 0.");
+  HTILS_TEST_ASSERT(cli->arena == arena, "Cli arena is not the same.");
+
+  cli_add(cli, HTILS_STR("test"), HTILS_STR("Test option"), false);
+  cli_add(cli, HTILS_STR("other_test"), HTILS_STR("Test option 2"), true);
+
+  HTILS_TEST_ASSERT(da_len(cli->options) == 2, "Cli options is not 2.");
+  HTILS_TEST_ASSERT(cli->options[0]->name, "Option name is null.");
+  HTILS_TEST_ASSERT(cli->options[0]->name->len > 0, "Option name is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("test"), cli->options[0]->name),
+                    "Option name doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[0]->desc, "Option desc is null.");
+  HTILS_TEST_ASSERT(cli->options[0]->desc->len > 0, "Option desc is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("Test option"), cli->options[0]->desc),
+                    "Option desc doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[0]->cli_short, "Option cli_short is null.");
+  HTILS_TEST_ASSERT(cli->options[0]->cli_short->len > 0,
+                    "Option cli_short is empty.");
+  HTILS_TEST_ASSERT(cli->options[0]->cli_short_short == 't',
+                    "Option cli_short_short doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[0]->has_arg == false,
+                    "Option has_arg doesn't match.");
+
+  HTILS_TEST_ASSERT(cli->options[1]->name, "Option name is null.");
+  HTILS_TEST_ASSERT(cli->options[1]->name->len > 0, "Option name is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("other_test"), cli->options[1]->name),
+                    "Option name doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[1]->desc, "Option desc is null.");
+  HTILS_TEST_ASSERT(cli->options[1]->desc->len > 0, "Option desc is empty.");
+  HTILS_TEST_ASSERT(
+      stringcmp(HTILS_STR("Test option 2"), cli->options[1]->desc),
+      "Option desc doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[1]->cli_short,
+                    "Option short cli arg is null.");
+  HTILS_TEST_ASSERT(cli->options[1]->cli_short->len > 0,
+                    "Option short cli arg is empty.");
+  HTILS_TEST_ASSERT(cli->options[1]->cli_short_short == 'o',
+                    "Option short cli arg doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[1]->has_arg == true,
+                    "Option has_arg doesn't match.");
+
+  return HTILS_TEST_PASS;
+}
+HTILS_TEST(parse_cli) {
+  int argc = 2;
+  cstr *argv[2] = {"-t", "-g"};
+
+  htils_cli_t *cli =
+      cli_new(arena, argc, argv, HTILS_STR("Test cli"),
+              HTILS_STR("This is a test cli program for testing cli.h"));
+
+  HTILS_TEST_ASSERT(cli, "Cli is null.");
+  HTILS_TEST_ASSERT(cli->argc == argc, "Cli argc is not 2.");
+  HTILS_TEST_ASSERT(memcmp(cli->argv, argv, argc * sizeof(cstr *)) == 0,
+                    "Cli argv is not correct.");
+  HTILS_TEST_ASSERT(cli->cli_name, "Cli name is null.");
+  HTILS_TEST_ASSERT(cli->cli_name->len > 0, "Cli name is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("Test cli"), cli->cli_name),
+                    "Cli name doesn't match.");
+  HTILS_TEST_ASSERT(cli->cli_desc, "Cli desc is null.");
+  HTILS_TEST_ASSERT(cli->cli_desc->len > 0, "Cli desc is empty.");
+  HTILS_TEST_ASSERT(
+      stringcmp(HTILS_STR("This is a test cli program for testing cli.h"),
+                cli->cli_desc),
+      "Cli desc doesn't match.");
+  HTILS_TEST_ASSERT(da_len(cli->options) == 0, "Cli options is not 0.");
+  HTILS_TEST_ASSERT(cli->arena == arena, "Cli arena is not the same.");
+
+  cli_add(cli, HTILS_STR("test"), HTILS_STR("Test option"), false);
+  cli_add(cli, HTILS_STR("other_test"), HTILS_STR("Test option 2"), true);
+
+  HTILS_TEST_ASSERT(da_len(cli->options) == 2, "Cli options is not 2.");
+  HTILS_TEST_ASSERT(cli->options[0]->name, "Option name is null.");
+  HTILS_TEST_ASSERT(cli->options[0]->name->len > 0, "Option name is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("test"), cli->options[0]->name),
+                    "Option name doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[0]->desc, "Option desc is null.");
+  HTILS_TEST_ASSERT(cli->options[0]->desc->len > 0, "Option desc is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("Test option"), cli->options[0]->desc),
+                    "Option desc doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[0]->cli_short, "Option cli_short is null.");
+  HTILS_TEST_ASSERT(cli->options[0]->cli_short->len > 0,
+                    "Option cli_short is empty.");
+  HTILS_TEST_ASSERT(cli->options[0]->cli_short_short == 't',
+                    "Option cli_short_short doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[0]->has_arg == false,
+                    "Option has_arg doesn't match.");
+
+  HTILS_TEST_ASSERT(cli->options[1]->name, "Option name is null.");
+  HTILS_TEST_ASSERT(cli->options[1]->name->len > 0, "Option name is empty.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("other_test"), cli->options[1]->name),
+                    "Option name doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[1]->desc, "Option desc is null.");
+  HTILS_TEST_ASSERT(cli->options[1]->desc->len > 0, "Option desc is empty.");
+  HTILS_TEST_ASSERT(
+      stringcmp(HTILS_STR("Test option 2"), cli->options[1]->desc),
+      "Option desc doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[1]->cli_short,
+                    "Option short cli arg is null.");
+  HTILS_TEST_ASSERT(cli->options[1]->cli_short->len > 0,
+                    "Option short cli arg is empty.");
+  HTILS_TEST_ASSERT(cli->options[1]->cli_short_short == 'o',
+                    "Option short cli arg doesn't match.");
+  HTILS_TEST_ASSERT(cli->options[1]->has_arg == true,
+                    "Option has_arg doesn't match.");
+
+  i16 opt;
+  while ((opt = parse_cli(cli)) != -1) {
+    switch (opt) {
+    case 't':
+      break;
+    case 'o':
+      break;
+    case '?':
+      break;
+    default:
+      HTILS_TEST_ASSERT(false, "Unexpected option.");
+    }
+  }
+
+  return HTILS_TEST_PASS;
+}
+
+int main(int argc, cstr **argv) {
   arena_t *arena = arena_new(MiB(1), KiB(128));
   u32 failures = 0;
   u32 test_count = 0;
@@ -936,6 +1110,61 @@ int main(void) {
   HTILS_TEST_RUN(write_to_file);
   HTILS_TEST_RUN(write_to_file_bytes);
   HTILS_TEST_RUN(write_to_file_stream_bytes);
+
+  HTILS_TEST_RUN(cli_new);
+  HTILS_TEST_RUN(cli_add);
+  HTILS_TEST_RUN(parse_cli);
+
+  htils_cli_t *cli =
+      cli_new(arena, argc, argv, HTILS_STR("Test cli"),
+              HTILS_STR("This is a test cli program for testing cli.h"));
+
+  cli_add(cli, HTILS_STR("test"), HTILS_STR("Test option"), false);
+  cli_add(cli, HTILS_STR("other_test"), HTILS_STR("Test option 2"), true);
+
+  i16 opt;
+  while ((opt = parse_cli(cli)) != -1) {
+    switch (opt) {
+    case 't':
+      printf("test\n");
+      break;
+    case 'o':
+      printf("other_test: %s\n", cli->optarg);
+      break;
+    case '?':
+      printf("Unknown option: %c\n", cli->optopt);
+      cli->usage(cli, argv);
+      break;
+    case ':':
+      switch (cli->optopt) {
+      case 'o':
+        printf("Option \"o\" requires an argument\n");
+        break;
+      default:
+        printf("Unknown option: %c\n", cli->optopt);
+        break;
+      }
+      break;
+    case ';':
+      switch (cli->optopt) {
+      case 't':
+        printf("Option t doesn't require an argument\n");
+        break;
+      default:
+        printf("Unknown option: %c\n", cli->optopt);
+        break;
+      }
+      break;
+    default:
+      printf("Unexpected option: %c\n", opt);
+      break;
+    }
+  }
+
+  for (i64 i = cli->optidx; i < cli->argc; i++) {
+
+    printf("Positional arg: %s\n", cli->argv[i]);
+  }
 
   HTILS_TEST_RESULT();
 }
