@@ -1,11 +1,5 @@
 {
 	"name": "htils-docs",
 	"compatibility_date": "2026-02-07",
-	"assets": {
-		"directory": "./doc/html"
-	},
-	"build": {
-		"command": "doxygen Doxyfile",
-	},
 	"pages_build_output_dir": "./doc/html",
 }
