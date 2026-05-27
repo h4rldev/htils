@@ -56,9 +56,10 @@ typedef const cstr *test_fn(arena_t *arena);
                                                                                \
     if (!result)                                                               \
       fprintf(stderr, "   %sPASS%s: %s\n", COLOR_GREEN, COLOR_RESET, #name);   \
-    else if (result[0] == '@')                                                 \
+    else if (result[0] == '@') {                                               \
       fprintf(stderr, "   %sSKIPPED%s: %s\n", COLOR_CYAN, COLOR_RESET, #name); \
-    else                                                                       \
+      skips++;                                                                 \
+    } else                                                                     \
       (failures)++;                                                            \
   } while (0)
 
@@ -69,11 +70,15 @@ typedef const cstr *test_fn(arena_t *arena);
     if (failures > 0) {                                                        \
       fprintf(stderr, "\n%u Tests %sFAILED%s.\n", failures, COLOR_RED,         \
               COLOR_RESET);                                                    \
+      fprintf(stderr, "%sSKIPPED%s %u tests.\n", COLOR_CYAN, COLOR_RESET,      \
+              skips);                                                          \
       return 1;                                                                \
     }                                                                          \
                                                                                \
     fprintf(stderr, "\nAll %u tests %sPASSED%s.\n", test_count, COLOR_GREEN,   \
             COLOR_RESET);                                                      \
+    fprintf(stderr, "%sSKIPPED%s %u tests.\n", COLOR_CYAN, COLOR_RESET,        \
+            skips);                                                            \
     return 0;                                                                  \
   } while (0)
 

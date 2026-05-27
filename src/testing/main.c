@@ -1068,6 +1068,7 @@ HTILS_TEST(parse_cli) {
 int main(int argc, cstr **argv) {
   arena_t *arena = arena_new(MiB(1), KiB(128));
   u32 failures = 0;
+  u32 skips = 0;
   u32 test_count = 0;
 
   HTILS_TEST_RUN(string_new);
