@@ -26,22 +26,43 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
   - `cstr`
   - `ucstr`
   - `null`
+
 - A small and flexible reserve and commit arena.
+
   > Available through htils/arena.h
+
 - A string type based on unsigned 8bit integers, with tons of features for its manipulation.
+
   > Available through htils/string.h
+
 - A custom assert that uses exit() instead of abort().
+
   > Available through htils/assert.h
+
 - A simple stringmap, that isn't super type-agnostic, but it works well enough.
+
   > Available through htils/stringmap.h
+
 - Path manipulation.
+
   > Available through htils/path.h
+
 - Type-agnostic dynamic arrays.
+
   > Available through htils/darray.h
+
 - File IO.
+
   > Available through htils/file.h
+
 - An easy to use cli parser.
+
   > Available through htils/cli.h
+
+- A dotenv parser.
+
+  > Available through htils/dotenv.h
+
 - A tiny test suite.
   > Available through htils/test.h
 

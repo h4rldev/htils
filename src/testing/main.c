@@ -4,6 +4,7 @@
 #include <htils/basictypes.h>
 #include <htils/cli.h>
 #include <htils/darray.h>
+#include <htils/dotenv.h>
 #include <htils/file.h>
 #include <htils/path.h>
 #include <htils/string.h>
@@ -874,6 +875,23 @@ HTILS_TEST(write_to_file_bytes) {
   return HTILS_TEST_PASS;
 }
 
+HTILS_TEST(dotenv_load) {
+  string *contents = string_from_cstr(arena, "EGG=\"test\"\nEGG2=\"test2\"");
+  u64 written = write_to_file(HTILS_STR("./src/testing/gum.env"), contents);
+  HTILS_TEST_ASSERT(written == contents->len, "Failed to write to file.");
+
+  i32 amount = htils_dotenv_load(arena, HTILS_STR("./src/testing/"));
+  HTILS_TEST_ASSERT(amount == 2, "Failed to load dotenv.");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("test"), HTILS_STR(getenv("EGG"))),
+                    "EGG is not 'test'");
+  HTILS_TEST_ASSERT(stringcmp(HTILS_STR("test2"), HTILS_STR(getenv("EGG2"))),
+                    "EGG2 is not 'test2'");
+  b32 removed = path_remove(HTILS_STR("./src/testing/gum.env"));
+  HTILS_TEST_ASSERT(removed, "Failed to remove file.");
+
+  return HTILS_TEST_PASS;
+}
+
 HTILS_TEST(cli_new) {
   int argc = 2;
   cstr *argv[2] = {"test", "test2"};
@@ -1110,6 +1128,8 @@ int main(int argc, cstr **argv) {
   HTILS_TEST_RUN(write_to_file);
   HTILS_TEST_RUN(write_to_file_bytes);
   HTILS_TEST_RUN(write_to_file_stream_bytes);
+
+  HTILS_TEST_RUN(dotenv_load);
 
   HTILS_TEST_RUN(cli_new);
   HTILS_TEST_RUN(cli_add);

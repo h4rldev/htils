@@ -191,13 +191,16 @@ u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena) {
 
   for (u8 *p = start; p <= end; p++) {
     if (p == end || *p == delim) {
-      string *slice = string_new(arena, (u64)(p - start));
-      slice->len = (u64)(p - start);
-      slice->base = start;
+      u64 len = (u64)(p - start);
+      if (len > 0) {
+        string *slice = string_new(arena, (u64)(p - start));
+        slice->len = len;
+        memcpy(slice->base, start, len);
 
-      da_append(arena, *darray, slice);
-      count++;
-      start = p + 1;
+        da_append(arena, *darray, slice);
+        count++;
+        start = p + 1;
+      }
     }
   }
 

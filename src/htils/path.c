@@ -116,11 +116,12 @@ string *path_extension(arena_t *arena, const string *path) {
     sep--;
 
   u8 *dot = null;
-  for (u8 *p = end - 1; p >= sep; p--)
+  for (u8 *p = end - 1; p >= sep; p--) {
     if (*p == '.') {
       dot = p;
       break;
     }
+  }
 
   if (dot && dot > sep && dot < end - 1) {
     u64 ext_len = (u64)(end - dot);
