@@ -193,8 +193,7 @@ u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena) {
     if (p == end || *p == delim) {
       u64 len = (u64)(p - start);
       if (len > 0) {
-        string *slice = string_new(arena, (u64)(p - start));
-        slice->len = len;
+        string *slice = string_new(arena, len);
         memcpy(slice->base, start, len);
 
         da_append(arena, *darray, slice);
@@ -259,10 +258,9 @@ i64 string_findc(string *haystack, u8 needle) {
   htils_assert(haystack->len > 0 && "Haystack cannot be empty.");
   htils_assert(needle > 0 && "Needle cannot be empty.");
 
-  for (u8 *p = haystack->base; p < haystack->base + haystack->len; p++) {
+  for (u8 *p = haystack->base; p < haystack->base + haystack->len; p++)
     if (*p == needle)
       return (i64)(p - haystack->base);
-  }
 
   return -1;
 }
@@ -273,10 +271,9 @@ i64 string_find_sstr(string *haystack, string *needle) {
   htils_assert(haystack->len > 0 && "Haystack cannot be empty.");
   htils_assert(needle->len > 0 && "Needle cannot be empty.");
 
-  for (u8 *p = haystack->base; p < haystack->base + haystack->len; p++) {
-    if (memcmp(string_to_cstr(needle), &(*p), needle->len) == 0)
+  for (u8 *p = haystack->base; p < haystack->base + haystack->len; p++)
+    if (memcmp(needle->base, &(*p), needle->len) == 0)
       return (i64)(p - haystack->base);
-  }
 
   return -1;
 }
