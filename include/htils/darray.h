@@ -5,11 +5,16 @@
 #include <htils/assert.h>
 #include <htils/basictypes.h>
 
-typedef struct da_header da_header_t;
-struct da_header {
+/**
+ * @brief The header of a dynamic array.
+ *
+ * @param cap The capacity of the dynamic array.
+ * @param len The length of the dynamic array.
+ */
+typedef struct da_header {
   u64 cap;
   u64 len;
-};
+} da_header_t;
 
 //
 //
