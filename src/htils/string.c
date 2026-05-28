@@ -16,9 +16,16 @@
 //
 //
 
+static inline b32 is_whitespace(u8 c) {
+  return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
+//
+//
+//
+
 string *string_new(arena_t *arena, const u64 len) {
-  htils_assert(len > 0 && "Length must be greater than 0.");
-  htils_assert(arena != null && "Arena cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
   htils_assert(len > 0 && "Length must be greater than 0.");
 
   string *str = arena_alloc(arena, string, 1);
@@ -34,8 +41,8 @@ string *string_new(arena_t *arena, const u64 len) {
 //
 
 string *string_dup(arena_t *arena, const string *from) {
-  htils_assert(from != null && "String cannot be null.");
-  htils_assert(arena != null && "Arena cannot be null.");
+  htils_assert(from && "String cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
   htils_assert(from->len > 0 && "String cannot be empty.");
 
   string *out = string_new(arena, from->len);
@@ -49,8 +56,8 @@ string *string_dup(arena_t *arena, const string *from) {
 //
 
 string *string_from_cstr(arena_t *arena, const cstr *base) {
-  htils_assert(base != null && "Base cannot be null.");
-  htils_assert(arena != null && "Arena cannot be null.");
+  htils_assert(base && "Base cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
 
   u64 len = strlen(base);
 
@@ -65,7 +72,7 @@ string *string_from_cstr(arena_t *arena, const cstr *base) {
 //
 
 string_slice string_slice_from_cstr(u8 *base, u64 len) {
-  htils_assert(base != null && "Base cannot be null.");
+  htils_assert(base && "Base cannot be null.");
   htils_assert(len > 0 && "Length must be greater than 0.");
 
   return (string_slice){.base = base, .len = len};
@@ -84,6 +91,7 @@ string_slice string_slice_from_string(string *str) {
 cstr *string_to_cstr(const string *str) {
   htils_assert(str != null && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
+  htils_assert(str->base && "String base cannot be null.");
 
   cstr *ret = (cstr *)str->base;
   ret[str->len] = '\0';
@@ -95,9 +103,12 @@ cstr *string_to_cstr(const string *str) {
 //
 
 u64 string_concat(arena_t *arena, string *dest, const string *src) {
-  htils_assert(arena != null && "Arena cannot be null.");
-  htils_assert(dest != null && "dest cannot be null.");
-  htils_assert(src != null && "src cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
+  htils_assert(dest && "dest cannot be null.");
+
+  htils_assert(src && "src cannot be null.");
+  htils_assert(src->len > 0 && "Source string cannot be empty.");
+  htils_assert(src->base && "Source string base cannot be null.");
 
   u8 *new_base = arena_alloc(arena, u8, dest->len + src->len);
 
@@ -112,9 +123,9 @@ u64 string_concat(arena_t *arena, string *dest, const string *src) {
 
 u64 string_concatb(arena_t *arena, string *dest, const string *src,
                    const u64 len) {
-  htils_assert(arena != null && "Arena cannot be null.");
-  htils_assert(dest != null && "Dest cannot be null.");
-  htils_assert(src != null && "Src cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
+  htils_assert(dest && "Dest cannot be null.");
+  htils_assert(src && "Src cannot be null.");
   htils_assert(len > 0 && "Length must be greater than 0.");
 
   u8 *new_base = arena_alloc(arena, u8, dest->len + len);
@@ -129,9 +140,9 @@ u64 string_concatb(arena_t *arena, string *dest, const string *src,
 }
 
 u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...) {
-  htils_assert(arena != null && "Arena cannot be null.");
-  htils_assert(dest != null && "Dest cannot be null.");
-  htils_assert(fmt != null && "Format cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
+  htils_assert(dest && "Dest cannot be null.");
+  htils_assert(fmt && "Format cannot be null.");
 
   va_list args;
   u64 fmt_len_w_args = 0;
@@ -141,21 +152,16 @@ u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...) {
   va_end(args);
 
   u64 len = dest->len + fmt_len_w_args;
-  u8 *new_base = arena_alloc(arena, u8, len);
 
-  temp_arena_t temp = temp_arena_new(arena);
-
-  u8 *buf = arena_alloc(temp.arena, u8, fmt_len_w_args + 1);
+  u8 *new_base = arena_alloc(arena, u8, len + 1);
   va_start(args, fmt);
-  u64 written = vsnprintf((cstr *)buf, fmt_len_w_args + 1, fmt, args);
+  u64 written =
+      vsnprintf((cstr *)(new_base + dest->len), fmt_len_w_args + 1, fmt, args);
   va_end(args);
 
   htils_assert(written == fmt_len_w_args && "Failed to write to buffer.");
 
   memcpy(new_base, dest->base, dest->len);
-  memcpy(new_base + dest->len, buf, fmt_len_w_args);
-
-  temp_arena_free(temp);
 
   dest->base = new_base;
   dest->len = len;
@@ -172,6 +178,8 @@ b32 stringcmp(const string *first, const string *second) {
   htils_assert(second != null && "Second string cannot be null.");
   htils_assert(first->len > 0 && "First string cannot be empty.");
   htils_assert(second->len > 0 && "Second string cannot be empty.");
+  htils_assert(first->base && "First string base cannot be null.");
+  htils_assert(second->base && "Second string base cannot be null.");
 
   if (first->len != second->len)
     return false;
@@ -185,7 +193,9 @@ b32 stringcmpb(const string *first, const string *second, const u64 len) {
   htils_assert(len > 0 && "Length must be greater than 0.");
 
   htils_assert(first->len > 0 && "First string cannot be empty.");
+  htils_assert(first->base && "First string base cannot be null.");
   htils_assert(second->len > 0 && "Second string cannot be empty.");
+  htils_assert(second->base && "Second string base cannot be null.");
 
   return memcmp(first->base, second->base, len) == 0;
 }
@@ -201,6 +211,7 @@ u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena) {
   htils_assert(delim > 0 && "Delimiter must be greater than 0.");
 
   htils_assert(src->len > 0 && "Source string cannot be empty.");
+  htils_assert(src->base && "Source string base cannot be null.");
 
   u64 count = 0;
   u8 *start = src->base;
@@ -238,12 +249,12 @@ void string_trim(string *str) {
 void string_trim_left(string *str) {
   htils_assert(str != null && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
+  htils_assert(str->base && "String base cannot be null.");
 
   u8 *start = str->base;
   u8 *end = str->base + str->len;
 
-  while (start < end && (*start == ' ' || *start == '\t' || *start == '\n' ||
-                         *start == '\r')) {
+  while (start < end && is_whitespace(*start)) {
     start++;
   }
 
@@ -254,12 +265,12 @@ void string_trim_left(string *str) {
 void string_trim_right(string *str) {
   htils_assert(str != null && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
+  htils_assert(str->base && "String base cannot be null.");
 
   u8 *start = str->base;
   u8 *end = str->base + str->len;
 
-  while (end > start && (*(end - 1) == ' ' || *(end - 1) == '\t' ||
-                         *(end - 1) == '\n' || *(end - 1) == '\r')) {
+  while (end > start && is_whitespace(*(end - 1))) {
     end--;
   }
 
@@ -273,23 +284,25 @@ void string_trim_right(string *str) {
 i64 string_findc(string *haystack, u8 needle) {
   htils_assert(haystack != null && "Haystack cannot be null.");
   htils_assert(haystack->len > 0 && "Haystack cannot be empty.");
+  htils_assert(haystack->base && "Haystack base cannot be null.");
+
   htils_assert(needle > 0 && "Needle cannot be empty.");
 
-  for (u8 *p = haystack->base; p < haystack->base + haystack->len; p++)
-    if (*p == needle)
-      return (i64)(p - haystack->base);
-
-  return -1;
+  u8 *found = (u8 *)memchr(haystack->base, needle, haystack->len);
+  return found ? (i64)(found - haystack->base) : -1;
 }
 
 i64 string_find_sstr(string *haystack, string *needle) {
   htils_assert(haystack != null && "Haystack cannot be null.");
   htils_assert(needle != null && "Needle cannot be null.");
   htils_assert(haystack->len > 0 && "Haystack cannot be empty.");
+  htils_assert(haystack->base && "Haystack base cannot be null.");
   htils_assert(needle->len > 0 && "Needle cannot be empty.");
+  htils_assert(needle->base && "Needle base cannot be null.");
 
-  for (u8 *p = haystack->base; p < haystack->base + haystack->len; p++)
-    if (memcmp(needle->base, &(*p), needle->len) == 0)
+  for (u8 *p = haystack->base;
+       p <= haystack->base + haystack->len - needle->len; p++)
+    if (memcmp(needle->base, p, needle->len) == 0)
       return (i64)(p - haystack->base);
 
   return -1;

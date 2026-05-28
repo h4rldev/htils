@@ -17,22 +17,20 @@
 u64 file_size_stream(FILE *stream) {
   htils_assert(stream && "Stream cannot be null.");
 
-  int res = fseek64(stream, 0, SEEK_END);
-  htils_assert(res == 0 && "Failed to seek to end of file, Might be a pipe, "
-                           "terminal, or something else.");
+  struct stat st;
+  int fd = fileno(stream);
+  int res = fstat(fd, &st);
+  htils_assert(res == 0 && "Failed to get size of file.");
 
-  i64 size = ftell64(stream);
-  assert(size >= 0 && "Failed to get size of file.");
-
-  rewind(stream);
-  return (u64)size;
+  return (u64)st.st_size;
 }
 
 u64 file_size(const string *path) {
   htils_assert(path && "Path cannot be null.");
   htils_assert(path->len > 0 && "Path cannot be empty.");
 
-  FILE *stream = fopen(string_to_cstr(path), "rb");
+  const cstr *path_cstr = string_to_cstr(path);
+  FILE *stream = fopen(path_cstr, "rb");
   assert(stream != null && "Failed to open file.");
 
   u64 size = file_size_stream(stream);
@@ -47,7 +45,6 @@ u64 file_size(const string *path) {
 
 string *read_file_from_stream(arena_t *arena, FILE *stream) {
   htils_assert(arena && "Arena cannot be null.");
-
   htils_assert(stream && "Stream cannot be null.");
 
   u64 size = file_size_stream(stream);
@@ -64,7 +61,8 @@ string *read_file(arena_t *arena, const string *path) {
   htils_assert(path && "Path cannot be null.");
   htils_assert(path->len > 0 && "Path cannot be empty.");
 
-  FILE *stream = fopen(string_to_cstr(path), "rb");
+  const cstr *path_cstr = string_to_cstr(path);
+  FILE *stream = fopen(path_cstr, "rb");
   assert(stream != null && "Failed to open file.");
 
   string *out = read_file_from_stream(arena, stream);
@@ -96,7 +94,8 @@ string *read_file_bytes(arena_t *arena, const string *path, const u64 bytes) {
   htils_assert(path->len > 0 && "Path cannot be empty.");
   htils_assert(bytes > 0 && "Bytes must be greater than 0.");
 
-  FILE *stream = fopen(string_to_cstr(path), "rb");
+  const cstr *path_cstr = string_to_cstr(path);
+  FILE *stream = fopen(path_cstr, "rb");
   assert(stream != null && "Failed to open file.");
 
   string *out = read_file_from_stream_bytes(arena, stream, bytes);
@@ -124,7 +123,8 @@ u64 write_to_file(const string *path, const string *contents) {
   htils_assert(contents && "Contents cannot be null.");
   htils_assert(contents->len > 0 && "Contents cannot be empty.");
 
-  FILE *stream = fopen(string_to_cstr(path), "wb");
+  const cstr *path_cstr = string_to_cstr(path);
+  FILE *stream = fopen(path_cstr, "wb");
   assert(stream != null && "Failed to open file.");
 
   u64 written = write_to_file_stream(stream, contents);
@@ -157,7 +157,8 @@ u64 write_to_file_bytes(const string *path, const string *contents,
   htils_assert(bytes > 0 && "Bytes must be greater than 0.");
   htils_assert(contents->len > 0 && "Contents cannot be empty.");
 
-  FILE *stream = fopen(string_to_cstr(path), "wb");
+  const cstr *path_cstr = string_to_cstr(path);
+  FILE *stream = fopen(path_cstr, "wb");
   assert(stream != null && "Failed to open file.");
 
   u64 written = write_to_file_stream_bytes(stream, contents, bytes);

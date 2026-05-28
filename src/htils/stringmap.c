@@ -16,35 +16,6 @@
 //
 //
 
-stringmap_t *sm_new(arena_t *arena, const u64 capacity) {
-  htils_assert(arena != null && "Arena cannot be null.");
-
-  stringmap_t *map = arena_alloc(arena, stringmap_t, 1);
-  map->arena = arena;
-
-  if (capacity > 0) {
-    map->entries = arena_alloc(arena, stringmap_entry_t, capacity);
-    map->capacity = capacity;
-  } else {
-    map->entries = arena_alloc(arena, stringmap_entry_t, DEFAULT_CAPACITY);
-    map->capacity = DEFAULT_CAPACITY;
-  }
-
-  for (u64 i = 0; i < map->capacity; i++) {
-    map->entries[i].state = EMPTY;
-    map->entries[i].key = null;
-  }
-
-  map->count = 0;
-  map->dead_entries = 0;
-
-  return map;
-}
-
-//
-//
-//
-
 /**
  * @brief Hash a key into an index.
  *
@@ -71,6 +42,38 @@ static u64 hash_key(const string *key) {
 }
 
 /**
+ * @brief Inserts a key-value pair into the stringmap directly.
+ *
+ * @details By first hashing the key, then iterating through the entries.
+ *
+ * @param map The stringmap to insert into.
+ * @param key The key to insert.
+ * @param value The value to insert.
+ * @param vsize The size of the value.
+ *
+ * @pre
+ *  - @c map, @c key, and @c value must be valid and cannot be `null`.
+ *  - @c vsize must be greater than 0 and the explicit size of the value, since
+ * @value is a void * it has to be provided.
+ */
+static void sm_insert_direct(stringmap_t *map, const string *key, void *value,
+                             u64 vsize) {
+  u64 idx = hash_key(key) % map->capacity;
+  for (;;) {
+    stringmap_entry_t *entry = &map->entries[idx];
+    if (entry->state != OCCUPIED) {
+      entry->key = (string *)key;
+      entry->value = value;
+      entry->vsize = vsize;
+      entry->state = OCCUPIED;
+      map->count++;
+      return;
+    }
+    idx = (idx + 1) % map->capacity;
+  }
+}
+
+/**
  * @brief Grow a stringmap if it's too small.
  *
  * @details By doubling the capacity, allocating a new block using \ref
@@ -81,17 +84,51 @@ static u64 hash_key(const string *key) {
  * @pre @c map must be valid and cannot be `null`.
  */
 static void sm_grow(stringmap_t *map) {
-  htils_assert(map != null && "stringmap cannot be null.");
+  htils_assert(map && "stringmap cannot be null.");
 
   u64 old_capacity = map->capacity;
   stringmap_entry_t *old_entries = map->entries;
+  u64 old_dead_entries = map->dead_entries;
 
+  map->count = 0;
   map->capacity *= 2;
   map->entries = arena_alloc(map->arena, stringmap_entry_t, map->capacity);
 
   for (u64 i = 0; i < old_capacity; i++)
     if (old_entries[i].state == OCCUPIED)
-      sm_insert(map, old_entries[i].key, (cstr *)old_entries[i].value);
+      sm_insert_direct(map, old_entries[i].key, old_entries[i].value,
+                       old_entries[i].vsize);
+
+  map->dead_entries = old_dead_entries;
+}
+
+//
+//
+//
+
+stringmap_t *sm_new(arena_t *arena, const u64 capacity) {
+  htils_assert(arena != null && "Arena cannot be null.");
+
+  stringmap_t *map = arena_alloc(arena, stringmap_t, 1);
+  map->arena = arena;
+
+  if (capacity > 0) {
+    map->entries = arena_alloc(arena, stringmap_entry_t, capacity);
+    map->capacity = capacity;
+  } else {
+    map->entries = arena_alloc(arena, stringmap_entry_t, DEFAULT_CAPACITY);
+    map->capacity = DEFAULT_CAPACITY;
+  }
+
+  for (u64 i = 0; i < map->capacity; i++) {
+    map->entries[i].state = EMPTY;
+    map->entries[i].key = null;
+  }
+
+  map->count = 0;
+  map->dead_entries = 0;
+
+  return map;
 }
 
 //
@@ -132,9 +169,14 @@ stringmap_result_t __sm_insert(stringmap_t *map, const string *key,
       break;
     case OCCUPIED:
       if (stringcmp(entry->key, key)) {
-        entry->value = __arena_alloc(map->arena, vsize);
-        memcpy(entry->value, value, vsize);
-        entry->vsize = vsize;
+        if (entry->vsize >= vsize) {
+          memcpy(entry->value, value, vsize);
+          entry->vsize = vsize;
+        } else {
+          entry->value = __arena_alloc(map->arena, vsize);
+          memcpy(entry->value, value, vsize);
+          entry->vsize = vsize;
+        }
         return UPDATED;
       }
     }
@@ -156,7 +198,7 @@ stringmap_result_t sm_kill(stringmap_t *map, const string *key) {
     case EMPTY:
       return NOT_FOUND;
     case DEAD:
-      return KILLED;
+      break;
     case OCCUPIED:
       if (stringcmp(entry->key, key)) {
         entry->state = DEAD;
@@ -184,10 +226,10 @@ void *sm_get(stringmap_t *map, const string *key) {
   htils_assert(key != null && "Key cannot be null.");
   htils_assert(key->len > 0 && "Key cannot be empty.");
 
-  u64 idx = hash_key(key) % map->capacity;
-  u64 guard = map->capacity;
+  u64 start_idx = hash_key(key) % map->capacity;
+  u64 idx = start_idx;
 
-  while (guard--) {
+  for (;;) {
     stringmap_entry_t *entry = &map->entries[idx];
     switch (entry->state) {
     case EMPTY:
@@ -200,6 +242,8 @@ void *sm_get(stringmap_t *map, const string *key) {
       break;
     }
     idx = (idx + 1) % map->capacity;
+    if (idx == start_idx)
+      return null;
   }
   return null;
 }

@@ -2,6 +2,7 @@
 #define HTILS_FILE_H
 
 #include <stdio.h>
+#include <sys/stat.h>
 
 //
 //
@@ -11,22 +12,14 @@
 #include <htils/basictypes.h>
 #include <htils/string.h>
 
-/** Safe macros for `fseek()` and `ftell()` thats compatible across platforms.
+/** Safe macros for `fstat()` and `fileno()` thats compatible across platforms.
  */
 #if defined(_WIN32)
-#include <shellapi.h>
 #include <windows.h>
 
-#define fseek64 _fseeki64
-#define ftell64 _ftelli64
-#elif defined(__linux__)
-#include <sys/stat.h>
-#include <unistd.h>
-
-#define fseek64 fseeko
-#define ftell64 ftello
-#else
-#error "Unsupported platform."
+#define fileno _fileno
+#define stat _stat64
+#define fstat _fstati64
 #endif
 
 //
@@ -36,15 +29,18 @@
 /**
  * @brief Gets the size of a file from a file stream.
  *
- * @details By reading the size through `fseek64()` and `ftell64()`. Which are
- * aliases:
+ * @details By reading the size using `fstat()` by first converting the file
+ * stream into a file descriptor with `fileno()`. and then getting the stat
+ * structure's `st_size` field.
+ *
+ * `fstat()` and `fileno()` are aliases:
  * - For Linux: Using <a
- * href="https://man7.org/linux/man-pages/man3/fseeko.3.html">fseeko()</a> and
- * <a href="https://man7.org/linux/man-pages/man3/ftello.3.html">ftello()</a>.
+ * href="https://linux.die.net/man/2/fstat">fstat()</a> and
+ * <a href="https://linux.die.net/man/3/fileno">fileno()</a>.
  * - For Windows: Using <a
- * href="https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/fseek-fseeki64">_fseeki64()</a>
+ * href="https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/fstat-fstat32-fstat64-fstati64-fstat32i64-fstat64i32">_fstati64()</a>
  * and <a
- * href="https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/ftell-ftelli64">_ftelli64()</a>.
+ * href="https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/fileno">_fileno()</a>.
  *
  * @pre @c stream must be valid, preferably open with "rb" and cannot be `null`.
  *
@@ -52,12 +48,12 @@
  *
  * @return The size of the file.
  *
- * @see <a
- * href="https://man7.org/linux/man-pages/man3/fseeko.3.html">fseeko()</a>, <a
- * href="https://man7.org/linux/man-pages/man3/ftello.3.html">ftello()</a>, <a
- * href="https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/fseek-fseeki64">_fseeki64()</a>,
- * <a
- * href="https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/ftell-ftelli64">_ftelli64()</a>.
+ * @see <a href="https://linux.die.net/man/2/fstat" target="_blank">fstat()</a>,
+ * <a href="https://linux.die.net/man/3/fileno" target="_blank">fileno()</a>, <a
+ * href="https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/fstat-fstat32-fstat64-fstati64-fstat32i64-fstat64i32"
+ * target="_blank">_fstati64()</a>, <a
+ * href="https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/fileno"
+ * target="_blank">_fileno()</a>.
  */
 u64 file_size_stream(FILE *stream);
 

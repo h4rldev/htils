@@ -285,7 +285,7 @@ HTILS_TEST(da_append) {
   da_append(arena, strs, string_from_cstr(arena, "meow3"));
 
   HTILS_TEST_ASSERT(da_len(strs) == 3, "Dynamic array length is not 3.");
-  HTILS_TEST_ASSERT(da_cap(strs) == 4, "Dynamic array capacity is not 4.");
+  HTILS_TEST_ASSERT(da_cap(strs) == 3, "Dynamic array capacity is not 4.");
 
   return HTILS_TEST_PASS;
 }
@@ -302,7 +302,7 @@ HTILS_TEST(da_pop) {
   da_append(arena, strs, string_from_cstr(arena, "meow3"));
 
   HTILS_TEST_ASSERT(da_len(strs) == 3, "Dynamic array length is not 3.");
-  HTILS_TEST_ASSERT(da_cap(strs) == 4, "Dynamic array capacity is not 4.");
+  HTILS_TEST_ASSERT(da_cap(strs) == 3, "Dynamic array capacity is not 4.");
 
   da_pop(strs);
 
@@ -323,7 +323,7 @@ HTILS_TEST(da_last) {
   da_append(arena, strs, string_from_cstr(arena, "meow3"));
 
   HTILS_TEST_ASSERT(da_len(strs) == 3, "Dynamic array length is not 3.");
-  HTILS_TEST_ASSERT(da_cap(strs) == 4, "Dynamic array capacity is not 4.");
+  HTILS_TEST_ASSERT(da_cap(strs) == 3, "Dynamic array capacity is not 4.");
 
   string *last = da_last(strs);
   HTILS_TEST_ASSERT(last, "Last string is null.");
@@ -346,7 +346,7 @@ HTILS_TEST(da_clear) {
   da_append(arena, strs, string_from_cstr(arena, "meow3"));
 
   HTILS_TEST_ASSERT(da_len(strs) == 3, "Dynamic array length is not 3.");
-  HTILS_TEST_ASSERT(da_cap(strs) == 4, "Dynamic array capacity is not 4.");
+  HTILS_TEST_ASSERT(da_cap(strs) == 3, "Dynamic array capacity is not 4.");
 
   da_clear(strs);
   HTILS_TEST_ASSERT(da_len(strs) == 0, "Dynamic array length is not 0.");

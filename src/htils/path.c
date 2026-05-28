@@ -26,13 +26,21 @@
 //
 //
 
+static inline b32 is_sep(u8 c) { return c == '/' || c == '\\'; }
+
+//
+//
+//
+
 string *path_canonical(arena_t *arena, const string *path) {
   htils_assert(path != null && "Path cannot be null.");
   htils_assert(arena != null && "Arena cannot be null.");
 
   htils_assert(path->len > 0 && "Path cannot be empty.");
+  htils_assert(path->base && "Path base cannot be null.");
 
-  cstr *res = realpath(string_to_cstr(path), null);
+  const cstr *path_cstr = string_to_cstr(path);
+  cstr *res = realpath(path_cstr, null);
   if (!res)
     return null;
 
@@ -47,14 +55,14 @@ string *path_basename(arena_t *arena, const string *path) {
   htils_assert(arena != null && "Arena cannot be null.");
 
   htils_assert(path->len > 0 && "Path cannot be empty.");
+  htils_assert(path->base && "Path base cannot be null.");
 
   u8 *end = path->base + path->len;
-
-  while (end > path->base && (*(end - 1) == '/' || *(end - 1) == '\\'))
+  while (end > path->base && is_sep(*(end - 1)))
     end--;
 
   u8 *start = end;
-  while (start > path->base && (*(start - 1) != '/' && *(start - 1) != '\\'))
+  while (start > path->base && !is_sep((*(start - 1))))
     start--;
 
   string *out = string_new(arena, (u64)(end - start));
@@ -68,14 +76,14 @@ string *path_dirname(arena_t *arena, const string *path) {
   htils_assert(arena != null && "Arena cannot be null.");
 
   htils_assert(path->len > 0 && "Path cannot be empty.");
+  htils_assert(path->base && "Path base cannot be null.");
 
   u8 *end = path->base + path->len;
-  while (end > path->base && (*(end - 1) == '/' || *(end - 1) == '\\'))
+  while (end > path->base && is_sep(*(end - 1)))
     end--;
 
   u8 *last_sep = end;
-  while (last_sep > path->base &&
-         (*(last_sep - 1) != '/' && *(last_sep - 1) != '\\'))
+  while (last_sep > path->base && !is_sep(*(last_sep - 1)))
     last_sep--;
 
   if (last_sep > path->base) {
@@ -106,13 +114,14 @@ string *path_extension(arena_t *arena, const string *path) {
   htils_assert(arena != null && "Arena cannot be null.");
 
   htils_assert(path->len > 0 && "Path cannot be empty.");
+  htils_assert(path->base && "Path base cannot be null.");
 
   u8 *end = path->base + path->len;
-  while (end > path->base && (*(end - 1) == '/' || *(end - 1) == '\\'))
+  while (end > path->base && is_sep(*(end - 1)))
     end--;
 
   u8 *sep = end;
-  while (sep > path->base && (*(sep - 1) != '/' && *(sep - 1) != '\\'))
+  while (sep > path->base && !is_sep(*(sep - 1)))
     sep--;
 
   u8 *dot = null;
@@ -138,14 +147,15 @@ string *path_stem(arena_t *arena, const string *path) {
   htils_assert(arena != null && "Arena cannot be null.");
 
   htils_assert(path->len > 0 && "Path cannot be empty.");
+  htils_assert(path->base && "Path base cannot be null.");
 
   u8 *end = path->base + path->len;
 
-  while (end > path->base && (*(end - 1) == '/' || *(end - 1) == '\\'))
+  while (end > path->base && is_sep(*(end - 1)))
     end--;
 
   u8 *sep = end;
-  while (sep > path->base && (*(sep - 1) != '/' && *(sep - 1) != '\\'))
+  while (sep > path->base && !is_sep(*(sep - 1)))
     sep--;
 
   u8 *dot = null;
@@ -178,12 +188,12 @@ string *path_join(arena_t *arena, const string *first, const string *second) {
   htils_assert(arena != null && "Arena cannot be null.");
 
   htils_assert(first->len > 0 && "First path cannot be empty.");
+  htils_assert(first->base && "First path base cannot be null.");
   htils_assert(second->len > 0 && "Second path cannot be empty.");
+  htils_assert(second->base && "Second path base cannot be null.");
 
-  u8 first_ends_sep = (first->len > 0) && (first->base[first->len - 1] == '/' ||
-                                           first->base[first->len - 1] == '\\');
-  u8 second_starts_sep =
-      (second->len > 0) && (second->base[0] == '/' || second->base[0] == '\\');
+  u8 first_ends_sep = (first->len > 0) && is_sep(first->base[first->len - 1]);
+  u8 second_starts_sep = (second->len > 0) && is_sep(second->base[0]);
 
   u64 total_len = first->len + second->len;
   if (first_ends_sep && second_starts_sep)
@@ -217,6 +227,7 @@ string *path_join(arena_t *arena, const string *first, const string *second) {
 b32 make_dir(const string *path) {
   htils_assert(path && "Path cannot be null.");
   htils_assert(path->len > 0 && "Path cannot be empty.");
+  htils_assert(path->base && "Path base cannot be null.");
 
 #if defined(__linux__)
   int res = mkdir(string_to_cstr(path), 0755);
@@ -232,6 +243,7 @@ b32 make_dir(const string *path) {
 b32 does_path_exist(const string *path) {
   htils_assert(path && "Path cannot be null.");
   htils_assert(path->len > 0 && "Path cannot be empty.");
+  htils_assert(path->base && "Path base cannot be null.");
 
 #if defined(__linux__)
   struct stat sb;
@@ -261,7 +273,7 @@ typedef wchar_t wcstr;
  * @return The converted wcstr.
  */
 wcstr *cstr_to_wcstr(arena_t *arena, const cstr *cstr) {
-  htils_assert(cstr != null && "CStr cannot be null.");
+  htils_assert(cstr != null && "C-String cannot be null.");
 
   UINT code_page = CP_ACP;
   u64 size_needed = MultiByteToWideChar(code_page, 0, cstr, -1, null, 0);
@@ -285,7 +297,7 @@ b32 path_remove(const string *path) {
   return remove(string_to_cstr(path)) == 0;
 #elif defined(_WIN32)
   cstr *path_cstr = string_to_cstr(path);
-  wcstr *path_wstr = cstr_to_wcstr(arena, path_cstr);
+  wcstr *path_wcstr = cstr_to_wcstr(arena, path_cstr);
 
   wcstr sz_buf[MAX_PATH + 2];
   wcsncpy_s(sz_buf, MAX_PATH + 1, path_wcstr, _TRUNCATE);
