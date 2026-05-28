@@ -145,6 +145,8 @@ just debug
 ## Todos
 
 - [x] - Nix package.
+- [ ] - Finish h2otils.
+- [ ] - Examples.
 - [ ] - More features.
 
 ## License
