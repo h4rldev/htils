@@ -541,7 +541,7 @@ HTILS_TEST(stringmap_get) {
 //
 
 HTILS_TEST(path_canonical) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
 
@@ -553,7 +553,7 @@ HTILS_TEST(path_canonical) {
 }
 
 HTILS_TEST(path_basename) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
 
@@ -567,21 +567,21 @@ HTILS_TEST(path_basename) {
 }
 
 HTILS_TEST(path_dirname) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
 
   string *dirname = path_dirname(arena, path);
   HTILS_TEST_ASSERT(dirname, "Dirname is null.");
   HTILS_TEST_ASSERT(dirname->len > 0, "Dirname length is 0.");
-  HTILS_TEST_ASSERT(memcmp(dirname->base, "./src/testing", 14) == 0,
+  HTILS_TEST_ASSERT(memcmp(dirname->base, "./src/testing/htils", 14) == 0,
                     "Failed to extract dirname.");
 
   return HTILS_TEST_PASS;
 }
 
 HTILS_TEST(path_extension) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
 
@@ -595,7 +595,7 @@ HTILS_TEST(path_extension) {
 }
 
 HTILS_TEST(path_stem) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c.file");
+  string *path = string_from_cstr(arena, "./src/testing/hitls/main.c.file");
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
 
@@ -610,7 +610,7 @@ HTILS_TEST(path_stem) {
 
 HTILS_TEST(path_join) {
   string *first = string_from_cstr(arena, "./src/");
-  string *second = string_from_cstr(arena, "testing/main.c");
+  string *second = string_from_cstr(arena, "testing/htils/main.c");
 
   HTILS_TEST_ASSERT(first, "First path is null.");
   HTILS_TEST_ASSERT(second, "Second path is null.");
@@ -620,11 +620,11 @@ HTILS_TEST(path_join) {
   string *joined = path_join(arena, first, second);
   HTILS_TEST_ASSERT(joined, "Joined path is null.");
   HTILS_TEST_ASSERT(joined->len > 0, "Joined path length is 0.");
-  HTILS_TEST_ASSERT(memcmp(joined->base, "./src/testing/main.c", 19) == 0,
+  HTILS_TEST_ASSERT(memcmp(joined->base, "./src/testing/htils/main.c", 19) == 0,
                     "Failed to join paths.");
 
   string *first1 = string_from_cstr(arena, "./src");
-  string *second1 = string_from_cstr(arena, "testing/main.c");
+  string *second1 = string_from_cstr(arena, "testing/htils/main.c");
 
   HTILS_TEST_ASSERT(first1, "First path is null.");
   HTILS_TEST_ASSERT(second1, "Second path is null.");
@@ -634,7 +634,8 @@ HTILS_TEST(path_join) {
   string *joined1 = path_join(arena, first1, second1);
   HTILS_TEST_ASSERT(joined1, "Joined path is null.");
   HTILS_TEST_ASSERT(joined1->len > 0, "Joined path length is 0.");
-  HTILS_TEST_ASSERT(memcmp(joined1->base, "./src/testing/main.c", 19) == 0,
+  HTILS_TEST_ASSERT(memcmp(joined1->base, "./src/testing/htils/main.c", 19) ==
+                        0,
                     "Failed to join paths.");
 
   return HTILS_TEST_PASS;
@@ -653,7 +654,7 @@ HTILS_TEST(make_dir) {
 }
 
 HTILS_TEST(file_exists) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
 
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
@@ -694,7 +695,7 @@ HTILS_TEST(remove_dir) {
 //
 
 HTILS_TEST(file_size_stream) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
 
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
@@ -711,7 +712,7 @@ HTILS_TEST(file_size_stream) {
 }
 
 HTILS_TEST(file_size) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
 
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
@@ -723,7 +724,7 @@ HTILS_TEST(file_size) {
 }
 
 HTILS_TEST(read_file_from_stream) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
 
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
@@ -745,7 +746,7 @@ HTILS_TEST(read_file_from_stream) {
 }
 
 HTILS_TEST(read_file) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
 
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
@@ -763,7 +764,7 @@ HTILS_TEST(read_file) {
 }
 
 HTILS_TEST(read_file_from_stream_bytes) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
 
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
@@ -787,7 +788,7 @@ HTILS_TEST(read_file_from_stream_bytes) {
 }
 
 HTILS_TEST(read_file_bytes) {
-  string *path = string_from_cstr(arena, "./src/testing/main.c");
+  string *path = string_from_cstr(arena, "./src/testing/htils/main.c");
 
   HTILS_TEST_ASSERT(path, "Path is null.");
   HTILS_TEST_ASSERT(path->len > 0, "Path length is 0.");
@@ -877,16 +878,17 @@ HTILS_TEST(write_to_file_bytes) {
 
 HTILS_TEST(dotenv_load) {
   string *contents = string_from_cstr(arena, "EGG=\"test\"\nEGG2=\"test2\"");
-  u64 written = write_to_file(HTILS_STR("./src/testing/gum.env"), contents);
+  u64 written =
+      write_to_file(HTILS_STR("./src/testing/htils/gum.env"), contents);
   HTILS_TEST_ASSERT(written == contents->len, "Failed to write to file.");
 
-  i32 amount = htils_dotenv_load(arena, HTILS_STR("./src/testing/"));
+  i32 amount = htils_dotenv_load(arena, HTILS_STR("./src/testing/htils"));
   HTILS_TEST_ASSERT(amount == 2, "Failed to load dotenv.");
   HTILS_TEST_ASSERT(stringcmp(HTILS_STR("test"), HTILS_STR(getenv("EGG"))),
                     "EGG is not 'test'");
   HTILS_TEST_ASSERT(stringcmp(HTILS_STR("test2"), HTILS_STR(getenv("EGG2"))),
                     "EGG2 is not 'test2'");
-  b32 removed = path_remove(HTILS_STR("./src/testing/gum.env"));
+  b32 removed = path_remove(HTILS_STR("./src/testing/htils/gum.env"));
   HTILS_TEST_ASSERT(removed, "Failed to remove file.");
 
   return HTILS_TEST_PASS;

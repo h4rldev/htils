@@ -64,6 +64,23 @@ string *string_from_cstr(arena_t *arena, const cstr *base) {
 //
 //
 
+string_slice string_slice_from_cstr(u8 *base, u64 len) {
+  htils_assert(base != null && "Base cannot be null.");
+  htils_assert(len > 0 && "Length must be greater than 0.");
+
+  return (string_slice){.base = base, .len = len};
+}
+
+string_slice string_slice_from_string(string *str) {
+  htils_assert(str != null && "String cannot be null.");
+
+  return string_slice_from_cstr(str->base, str->len);
+}
+
+//
+//
+//
+
 cstr *string_to_cstr(const string *str) {
   htils_assert(str != null && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");

@@ -28,6 +28,14 @@ typedef struct _string {
   u64 len;
 } string;
 
+/**
+ * @brief A slice of a \ref string
+ *
+ * @param base The base of the \ref string
+ * @param len The length of the \ref string
+ */
+typedef string string_slice;
+
 #ifdef USE_NULLABLE_TYPES
 typedef string_t string_nullable_t;
 #endif
@@ -101,6 +109,43 @@ string *string_dup(arena_t *arena, const string *from);
  * target="_blank">strlen()</a>.
  */
 string *string_from_cstr(arena_t *arena, const cstr *base);
+
+//
+//
+//
+
+/**
+ * @brief Create a \ref string_slice from a C-string.
+ *
+ * @details We're using string_slice as a term to represent a value
+ * instead of a pointer, to have less dependents on arena allocations.
+ *
+ * @param base The C-string to create the \ref string_slice from.
+ * @param len The length of the C-string.
+ *
+ * @pre
+ * - @c base must be valid and cannot be `null`.
+ * - @c len must be greater than 0.
+ *
+ * @return A \ref string_slice.
+ */
+string_slice string_slice_from_cstr(u8 *base, u64 len);
+
+/**
+ * @brief Create a \ref string_slice from a \ref string.
+ *
+ * @details We're using string_slice as a term to represent a value instead of a
+ * pointer, to have less dependents on arena allocations, this is basically the
+ * same as \ref string_slice_from_cstr() but for passing a string pointer
+ * instead for simply convenience reasons.
+ *
+ * @param str The \ref string to create the \ref string_slice from.
+ *
+ * @pre @c str must be valid and cannot be `null`.
+ *
+ * @return A \ref string_slice.
+ */
+string_slice string_slice_from_string(string *str);
 
 //
 //

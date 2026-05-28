@@ -121,6 +121,28 @@ void arena_free(arena_t *arena);
 void *__arena_alloc(struct arena *arena, u64 size);
 
 /**
+ * @brief Allocate a chunk of zeroed memory to the \ref arena.
+ *
+ * @note This function is not meant to be run directly, and is called by the
+ * \ref arena_alloc_zeroed() macro.
+ *
+ * @details Through basically pushing the position forwards and returning a
+ * small chunk of memory from the committed heap.
+ *
+ * @param arena The \ref arena to allocate from.
+ * @param size The size of the chunk to allocate.
+ *
+ * @pre
+ * - @c arena and @c size must be valid and cannot be `null`.
+ * - @c size must be greater than 0.
+ *
+ * @return A pointer to the allocated chunk.
+ *
+ * @see \ref arena_alloc()
+ */
+void *__arena_alloc_zeroed(struct arena *arena, u64 size);
+
+/**
  * @brief Deallocate a chunk of memory from the \ref arena.
  *
  * @note This function is not meant to be run directly, and is called by the
@@ -145,7 +167,7 @@ void __arena_dealloc(struct arena *arena, u64 size);
 //
 
 /**
- * @brief Allocate a chunk of memory from the  \ref arena.
+ * @brief Allocate a chunk of memory from the \ref arena.
  *
  * @details Through pushing the commit position of \ref arena, and returning
  * the allocated chunk that you specify, the reason for it being a macro is due
@@ -166,6 +188,30 @@ void __arena_dealloc(struct arena *arena, u64 size);
  */
 #define arena_alloc(arena, type, size)                                         \
   __arena_alloc(arena, sizeof(type) * size);
+
+/**
+ * @brief Allocate a chunk of zeroed memory from the \ref arena.
+ *
+ * @details Through pushing the commit position of \ref arena, and returning
+ * the allocated chunk that you specify, the reason for it being a macro is due
+ * to being able to specify the type, this will automatically grow the commit
+ * size if it's too small, all this logic resides in \ref
+ * __arena_alloc_zeroed().
+ *
+ * @param arena The \ref arena to allocate from.
+ * @param type The type of the chunk to allocate.
+ * @param size The size of the chunk to allocate.
+ *
+ * @pre
+ * - @c arena, @c type, and @c size must be valid and cannot be `null`.
+ * - @c type must be a valid type.
+ *
+ * @return A pointer to the allocated chunk.
+ *
+ * @see \ref __arena_alloc_zeroed()
+ */
+#define arena_alloc_zeroed(arena, type, size)                                  \
+  __arena_alloc_zeroed(arena, sizeof(type) * size);
 
 /**
  * @brief Deallocate a chunk of memory from the \ref arena.

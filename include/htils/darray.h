@@ -78,8 +78,9 @@ static inline da_header_t *da__hdr(void *da) {
     u64 capacity = (intitial_capacity);                                        \
     u64 alloc_size = DA_HEADER_SIZE + capacity;                                \
                                                                                \
-    da_header_t *header = arena_alloc((arena), darray, alloc_size);            \
+    da_header_t *header = arena_alloc_zeroed((arena), darray, alloc_size);     \
     header->cap = capacity;                                                    \
+    header->len = 0;                                                           \
     (darray) = (void *)(header + 1);                                           \
   } while (0)
 
@@ -114,7 +115,7 @@ static inline da_header_t *da__hdr(void *da) {
       u64 old_len = da__hdr(darray)->len;                                      \
       u64 alloc_size = DA_HEADER_SIZE + new_capacity;                          \
                                                                                \
-      da_header_t *header = arena_alloc((arena), darray, alloc_size);          \
+      da_header_t *header = arena_alloc_zeroed((arena), darray, alloc_size);   \
                                                                                \
       header->cap = new_capacity;                                              \
       header->len = old_len;                                                   \

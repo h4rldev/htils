@@ -53,6 +53,12 @@
 //
 //
 
+static u32 page_size_cache = 0;
+
+//
+//
+//
+
 /**
  * @brief Gets the page size of the system.
  *
@@ -61,7 +67,12 @@
  *
  * @return The page size of the system.
  */
-static u32 get_page_size(void) { return (u32)sysconf(_SC_PAGESIZE); }
+static u32 get_page_size(void) {
+  if (page_size_cache == 0)
+    page_size_cache = (u32)sysconf(_SC_PAGESIZE);
+
+  return page_size_cache;
+}
 
 /**
  * @brief Reserves a chunk of memory from the system.
@@ -160,9 +171,12 @@ static b32 __attribute__((unused)) mem_decommit(void *ptr, u64 size) {
  * @return The page size of the system.
  */
 static u32 get_page_size(void) {
-  SYSTEM_INFO sys_info;
-  GetSystemInfo(&sys_info);
-  return (u32)sys_info.dwPageSize;
+  if (page_size_cache == 0) {
+    SYSTEM_INFO sys_info;
+    GetSystemInfo(&sys_info);
+    page_size_cache = (u32)sys_info.dwPageSize;
+  }
+  return page_size_cache;
 }
 
 /**
@@ -295,10 +309,44 @@ void *__arena_alloc(struct arena *arena, u64 size) {
   htils_assert(new_pos < arena->reserved && "Arena is full.");
 
   if (new_pos > arena->commit_pos) {
-    u64 new_commit_pos = new_pos;
-    new_commit_pos += arena->committed - 1;
-    new_commit_pos -= new_commit_pos % arena->committed;
-    new_commit_pos = MIN(new_commit_pos, arena->reserved);
+    u64 chunk_size = arena->committed;
+    u64 chunks_needed =
+        (new_pos - arena->committed + chunk_size - 1) / chunk_size;
+    u64 new_commit_pos = arena->commit_pos + chunks_needed * chunk_size;
+    new_commit_pos =
+        new_commit_pos > arena->reserved ? arena->reserved : new_commit_pos;
+
+    u8 *mem = (u8 *)arena + arena->commit_pos;
+    u64 commit_size = new_commit_pos - arena->commit_pos;
+
+    htils_assert(mem_commit(mem, commit_size) &&
+                 "Failed to commit new memory.");
+
+    arena->commit_pos = new_commit_pos;
+  }
+
+  arena->pos = new_pos;
+  u8 *out = (u8 *)arena + pos_aligned;
+
+  return (void *)out;
+}
+
+void *__arena_alloc_zeroed(struct arena *arena, u64 size) {
+  htils_assert(arena != null && "Arena cannot be null.");
+  htils_assert(size > 0 && "Size must be greater than 0.");
+
+  u64 pos_aligned = ALIGN_POW2(arena->pos, ARENA_ALIGNMENT);
+  u64 new_pos = pos_aligned + size;
+
+  htils_assert(new_pos < arena->reserved && "Arena is full.");
+
+  if (new_pos > arena->commit_pos) {
+    u64 chunk_size = arena->committed;
+    u64 chunks_needed =
+        (new_pos - arena->committed + chunk_size - 1) / chunk_size;
+    u64 new_commit_pos = arena->commit_pos + chunks_needed * chunk_size;
+    new_commit_pos =
+        new_commit_pos > arena->reserved ? arena->reserved : new_commit_pos;
 
     u8 *mem = (u8 *)arena + arena->commit_pos;
     u64 commit_size = new_commit_pos - arena->commit_pos;

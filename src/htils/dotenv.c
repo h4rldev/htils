@@ -32,11 +32,12 @@
  *
  * @return True if the path is a .env file, false if it isn't.
  */
-static b32 is_env_file(arena_t *arena, const string *path) {
-  string *ext = path_extension(arena, path);
-  if (ext == null)
+static b32 is_env_file(const cstr *path_name) {
+  u64 len = strlen(path_name);
+  if (len < 4)
     return false;
-  return stringcmp(ext, HTILS_STR(".env"));
+
+  return memcmp(path_name + len - 4, ".env", 4) == 0;
 }
 
 /**
@@ -64,14 +65,18 @@ static string *find_first_env_file(arena_t *arena, const string *path) {
          entry->d_name[2] == '\0'))
       continue;
 
-    string *full_path = path_join(arena, path, HTILS_STR(entry->d_name));
+    if (entry->d_type != DT_DIR && is_env_file(entry->d_name)) {
+      string *full_path = path_join(arena, path, HTILS_STR(entry->d_name));
+      closedir(dir);
+      return full_path;
+    }
 
-    if (entry->d_type == DT_DIR)
-      find_first_env_file(arena, full_path);
-    else {
-      if (is_env_file(arena, full_path)) {
+    if (entry->d_type == DT_DIR) {
+      string *subdir_path = path_join(arena, path, HTILS_STR(entry->d_name));
+      string *found = find_first_env_file(arena, subdir_path);
+      if (found) {
         closedir(dir);
-        return full_path;
+        return found;
       }
     }
   }
@@ -90,9 +95,9 @@ static string *find_first_env_file(arena_t *arena, const string *path) {
  *
  * @pre @c str must be valid and cannot be `null`.
  */
-static void to_upper(string *str) {
-  for (u64 i = 0; i < str->len; i++)
-    str->base[i] = toupper(str->base[i]);
+static void to_upper(string_slice str_slice) {
+  for (u64 i = 0; i < str_slice.len; i++)
+    str_slice.base[i] = toupper(str_slice.base[i]);
 }
 
 /**
@@ -105,20 +110,21 @@ static void to_upper(string *str) {
  *
  * @pre @c str must be valid and cannot be `null`.
  */
-static void trim_quotes(string *str) {
-  htils_assert(str != null && "String cannot be null.");
-  htils_assert(str->len > 0 && "String cannot be empty.");
-  htils_assert(str->base[0] == '"' && "String must start with a quote");
+static void trim_quotes(string_slice *str) {
+  htils_assert(str != null && "String slice cannot be null.");
+  htils_assert(str->len > 0 && "String slice cannot be empty.");
+  htils_assert(str->base && "String slice base cannot be null.");
 
   if (str->len < 2)
     return;
 
-  if ((str->base[0] == '"' && str->base[str->len - 1] == '"') ||
-      (str->base[0] == '\'' && str->base[str->len] == '\'')) {
-    memmove(str->base, str->base + 1, str->len - 1);
-  }
+  u8 first = str->base[0];
+  u8 last = str->base[str->len - 1];
 
-  str->len -= 2;
+  if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+    memmove(str->base, str->base + 1, str->len - 1);
+    str->len -= 2;
+  }
 }
 
 /**
@@ -154,20 +160,24 @@ static b32 parse_line(arena_t *arena, string *line, string **key,
     return false;
 
   i64 idx = string_findc(line, '=');
-  string *key_part = string_new(arena, idx);
-  string *value_part = string_new(arena, line->len - idx - 1);
+  string_slice key_slice = string_slice_from_cstr(line->base, idx);
+  string_slice value_slice;
+  value_slice.base = line->base + idx + 1;
+  value_slice.len = line->len - idx - 1;
 
-  memcpy(key_part->base, line->base, idx);
-  memcpy(value_part->base, line->base + idx + 1, line->len - idx - 1);
+  string_trim(&key_slice);
+  string_trim(&value_slice);
 
-  string_trim(key_part);
-  string_trim(value_part);
+  to_upper(key_slice);
+  trim_quotes(&value_slice);
 
-  to_upper(key_part);
-  trim_quotes(value_part);
+  string *key_string = string_new(arena, key_slice.len);
+  string *value_string = string_new(arena, value_slice.len);
+  memcpy(key_string->base, key_slice.base, key_slice.len);
+  memcpy(value_string->base, value_slice.base, value_slice.len);
 
-  *key = key_part;
-  *value = value_part;
+  *key = key_string;
+  *value = value_string;
 
   return true;
 }
@@ -210,7 +220,10 @@ i32 htils_dotenv_load(arena_t *arena, const string *path) {
     if (parse_line(arena, line, &key, &value) == false)
       continue;
 
-    if (setenv(string_to_cstr(key), string_to_cstr(value), 1) != 0) {
+    cstr *key_cstr = string_to_cstr(key);
+    cstr *value_cstr = string_to_cstr(value);
+
+    if (setenv(key_cstr, value_cstr, 1) != 0) {
       fprintf(stderr, "Failed to set env var: %s\n", string_to_cstr(key));
       return -1;
     }

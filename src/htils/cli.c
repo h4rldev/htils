@@ -15,54 +15,6 @@
 //
 
 /**
- * @brief Print the usage of the cli, auttomatically generated from the options
- * in the cli.
- *
- * @details This will print the name, description, and usage of the cli, each
- * option being provided.
- * @note TODO: add footer customization.
- *
- * @param cli The cli to print the usage of.
- * @param argv The argv of the cli, for simply referencing argv[0].
- *
- * @pre @c cli and @c argv must be valid and not null.
- */
-void cli_usage(htils_cli_t *cli, cstr **argv) {
-  fprintf(stderr, "%" print_string "\n", print_string_arg(cli->cli_name));
-  fprintf(stderr, "%" print_string "\n", print_string_arg(cli->cli_desc));
-  fprintf(stderr, "Usage: %s [options]\n", argv[0]);
-
-  fprintf(stderr, "Options:\n");
-  for (u64 i = 0; i < da_len(cli->options); i++) {
-    fprintf(stderr, "  %" print_string ",\t",
-            print_string_arg(cli->options[i]->cli_long));
-    fprintf(stderr, "%" print_string "\t",
-            print_string_arg(cli->options[i]->cli_short));
-    fprintf(stderr, " %" print_string "\n",
-            print_string_arg(cli->options[i]->desc));
-  }
-}
-
-htils_cli_t *cli_new(arena_t *arena, i64 argc, cstr **argv, const string *name,
-                     const string *desc) {
-  htils_cli_t *cli = arena_alloc(arena, htils_cli_t, 1);
-  cli->argc = argc;
-  cli->argv = argv;
-  cli->cli_name = (string *)name;
-  cli->cli_desc = (string *)desc;
-  da_new(arena, cli->options, 1);
-  cli->arena = arena;
-  cli->usage = cli_usage;
-
-  cli->optidx = 1;
-  cli->next_char = -1;
-  cli->optarg = null;
-  cli->optopt = 0;
-
-  return cli;
-}
-
-/**
  * @brief Generate a short cli arg for an option.
  *
  * @details This will generate a short cli arg for an option, based on the name,
@@ -86,26 +38,24 @@ static string *_cli_create_short(arena_t *arena, const string *name) {
 
   string *short_name;
 
-  if (string_findc((string *)name, '-') != -1 ||
-      string_findc((string *)name, '_') != -1) {
+  i64 separator_idx = -1;
+  for (u64 i = 1; i < name->len - 1; i++) {
+    if (name->base[i] == '-' || name->base[i] == '_') {
+      separator_idx = i;
+      break;
+    }
+  }
+  if (separator_idx != -1) {
     short_name = string_new(arena, 3);
     short_name->base[0] = '-';
-    if (string_findc((string *)name, '_') != -1) {
-      i64 idx = string_findc((string *)name, '_');
-      short_name->base[1] = name->base[0];
-      short_name->base[2] = name->base[idx + 1];
-    } else {
-      i64 idx = string_findc((string *)name, '-');
-      short_name->base[1] = name->base[0];
-      short_name->base[2] = name->base[idx + 1];
-    }
-
-    return short_name;
+    short_name->base[1] = name->base[0];
+    short_name->base[2] = name->base[separator_idx + 1];
+  } else {
+    short_name = string_new(arena, 2);
+    short_name->base[0] = '-';
+    short_name->base[1] = name->base[0];
   }
 
-  short_name = string_new(arena, 2);
-  short_name->base[0] = '-';
-  short_name->base[1] = name->base[0];
   return short_name;
 }
 
@@ -165,14 +115,14 @@ static htils_cli_option_t *cli_find_short(htils_cli_t *cli, u8 c) {
  *
  * @return The \ref htils_cli_option_t that contains the long cli arg, or null.
  */
-static htils_cli_option_t *cli_find_long(htils_cli_t *cli, const string *name) {
+static htils_cli_option_t *cli_find_long(htils_cli_t *cli, const cstr *name,
+                                         const u64 name_len) {
   for (u64 i = 0; i < da_len(cli->options); i++) {
     string *ln = cli->options[i]->cli_long;
-    if (ln->len >= 2 && (ln->len - 2 == name->len) &&
-        memcmp(ln->base + 2, name->base, name->len) == 0)
+    if (ln->len >= 2 && (ln->len - 2 == name_len) &&
+        memcmp(ln->base + 2, name, name_len) == 0)
       return cli->options[i];
   }
-
   return null;
 }
 
@@ -191,6 +141,54 @@ void cli_add(htils_cli_t *cli, const string *name, const string *desc,
   option->has_arg = requires_arg;
 
   da_append(cli->arena, cli->options, option);
+}
+
+/**
+ * @brief Print the usage of the cli, auttomatically generated from the options
+ * in the cli.
+ *
+ * @details This will print the name, description, and usage of the cli, each
+ * option being provided.
+ * @note TODO: add footer customization.
+ *
+ * @param cli The cli to print the usage of.
+ * @param argv The argv of the cli, for simply referencing argv[0].
+ *
+ * @pre @c cli and @c argv must be valid and not null.
+ */
+void cli_usage(htils_cli_t *cli, cstr **argv) {
+  fprintf(stderr, "%" print_string "\n", print_string_arg(cli->cli_name));
+  fprintf(stderr, "%" print_string "\n", print_string_arg(cli->cli_desc));
+  fprintf(stderr, "Usage: %s [options]\n", argv[0]);
+
+  fprintf(stderr, "Options:\n");
+  for (u64 i = 0; i < da_len(cli->options); i++) {
+    fprintf(stderr, "  %" print_string ",\t",
+            print_string_arg(cli->options[i]->cli_long));
+    fprintf(stderr, "%" print_string "\t",
+            print_string_arg(cli->options[i]->cli_short));
+    fprintf(stderr, " %" print_string "\n",
+            print_string_arg(cli->options[i]->desc));
+  }
+}
+
+htils_cli_t *cli_new(arena_t *arena, i64 argc, cstr **argv, const string *name,
+                     const string *desc) {
+  htils_cli_t *cli = arena_alloc(arena, htils_cli_t, 1);
+  cli->argc = argc;
+  cli->argv = argv;
+  cli->cli_name = (string *)name;
+  cli->cli_desc = (string *)desc;
+  da_new(arena, cli->options, 1);
+  cli->arena = arena;
+  cli->usage = cli_usage;
+
+  cli->optidx = 1;
+  cli->next_char = -1;
+  cli->optarg = null;
+  cli->optopt = 0;
+
+  return cli;
 }
 
 i16 parse_cli(htils_cli_t *cli) {
@@ -252,18 +250,16 @@ i16 parse_cli(htils_cli_t *cli) {
       } else
         name_len = strlen(name_start);
 
-      string *name = string_new(cli->arena, name_len);
-      memcpy(name->base, name_start, name_len);
-      htils_cli_option_t *option = cli_find_long(cli, name);
+      htils_cli_option_t *option = cli_find_long(cli, name_start, name_len);
       if (!option) {
-        cli->optopt = name->base[0];
+        cli->optopt = name_start[0];
         cli->optidx++;
         return '?';
       }
 
       if (option->has_arg) {
         if (!eq) {
-          cli->optopt = name->base[0];
+          cli->optopt = name_start[0];
           cli->optidx++;
           return ':';
         }
@@ -273,7 +269,7 @@ i16 parse_cli(htils_cli_t *cli) {
         return option->cli_short_short;
       } else {
         if (eq) {
-          cli->optopt = name->base[0];
+          cli->optopt = name_start[0];
           cli->optidx++;
           return ';';
         }
