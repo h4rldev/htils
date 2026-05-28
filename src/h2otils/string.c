@@ -20,9 +20,16 @@
 //
 //
 
+static inline b32 is_whitespace(u8 c) {
+  return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
+//
+//
+//
+
 h2o_string *h2o_string_new(h2o_mem_pool_t *pool, const u64 len) {
-  htils_assert(len > 0 && "Length must be greater than 0.");
-  htils_assert(pool != null && "Pool cannot be null.");
+  htils_assert(pool && "Pool cannot be null.");
   htils_assert(len > 0 && "Length must be greater than 0.");
 
   h2o_string *str = h2o_mem_alloc_pool(pool, h2o_string, 1);
@@ -33,11 +40,22 @@ h2o_string *h2o_string_new(h2o_mem_pool_t *pool, const u64 len) {
   return str;
 }
 
+h2o_string *h2o_string_from_cstr(h2o_mem_pool_t *pool, const cstr *base) {
+  htils_assert(pool && "Pool cannot be null.");
+  htils_assert(base && "Base cannot be null.");
+
+  u64 len = strlen(base);
+  h2o_string *str = h2o_string_new(pool, len);
+  memcpy(str->base, base, len);
+
+  return str;
+}
+
 h2o_string *h2o_string_from_string(h2o_mem_pool_t *pool, const string *str) {
+  htils_assert(pool && "Pool cannot be null.");
   htils_assert(str && "String cannot be null.");
   htils_assert(str->base && "String base cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
-  htils_assert(pool && "Pool cannot be null.");
 
   h2o_string *out = h2o_string_new(pool, str->len);
 
@@ -47,18 +65,31 @@ h2o_string *h2o_string_from_string(h2o_mem_pool_t *pool, const string *str) {
   return out;
 }
 
-h2o_string *h2o_string_dup(h2o_mem_pool_t *pool, const h2o_string *from) {
-  htils_assert(from && "String cannot be null.");
-  htils_assert(from->len > 0 && "String cannot be empty.");
-  htils_assert(from->base && "Base cannot be null.");
-  htils_assert(pool && "Pool cannot be null.");
+//
+//
+//
 
-  h2o_string *out = h2o_string_new(pool, from->len);
+h2o_string_slice h2o_string_slice_from_cstr(cstr *base, u64 len) {
+  htils_assert(base && "Base cannot be null.");
+  htils_assert(len > 0 && "Length must be greater than 0.");
 
-  out->len = from->len;
-  memcpy(out->base, from->base, from->len);
+  return (h2o_string_slice){.base = base, .len = len};
+}
 
-  return out;
+h2o_string_slice h2o_string_slice_from_h2o_string(h2o_string *str) {
+  htils_assert(str != null && "String cannot be null.");
+  htils_assert(str->base && "Base cannot be null.");
+  htils_assert(str->len > 0 && "Length must be greater than 0.");
+
+  return (h2o_string_slice){.base = str->base, .len = str->len};
+}
+
+h2o_string_slice h2o_string_slice_from_string(string *str) {
+  htils_assert(str != null && "String cannot be null.");
+  htils_assert(str->base && "Base cannot be null.");
+  htils_assert(str->len > 0 && "Length must be greater than 0.");
+
+  return (h2o_string_slice){.base = (cstr *)str->base, .len = str->len};
 }
 
 //
@@ -79,15 +110,33 @@ cstr *h2o_string_to_cstr(const h2o_string *str) {
 //
 //
 
+h2o_string *h2o_string_dup(h2o_mem_pool_t *pool, const h2o_string *from) {
+  htils_assert(pool && "Pool cannot be null.");
+  htils_assert(from && "String cannot be null.");
+  htils_assert(from->len > 0 && "String cannot be empty.");
+  htils_assert(from->base && "Base cannot be null.");
+
+  h2o_string *out = h2o_string_new(pool, from->len);
+
+  out->len = from->len;
+  memcpy(out->base, from->base, from->len);
+
+  return out;
+}
+
+//
+//
+//
+
 u64 h2o_string_concat(h2o_mem_pool_t *pool, h2o_string *dest,
                       const h2o_string *src) {
+  htils_assert(pool && "Pool cannot be null.");
   htils_assert(src && "Src cannot be null.");
   htils_assert(src->base && "Src base cannot be null.");
   htils_assert(src->len > 0 && "Src cannot be empty.");
   htils_assert(dest && "Dest cannot be null.");
   htils_assert(dest->base && "Dest base cannot be null.");
   htils_assert(dest->len > 0 && "Dest cannot be empty.");
-  htils_assert(pool && "Pool cannot be null.");
 
   cstr *new_base = h2o_mem_alloc_pool(pool, cstr, dest->len + src->len);
 
@@ -138,15 +187,16 @@ u64 h2o_string_concatf(h2o_mem_pool_t *pool, h2o_string *dest, const cstr *fmt,
   va_end(args);
 
   u64 len = dest->len + fmt_len_w_args;
-  cstr *new_base = h2o_mem_alloc_pool(pool, cstr, len);
+  cstr *new_base = h2o_mem_alloc_pool(pool, cstr, len + 1);
 
-  cstr *buf = h2o_mem_alloc_pool(pool, cstr, fmt_len_w_args + 1);
   va_start(args, fmt);
-  vsnprintf((cstr *)buf, fmt_len_w_args + 1, fmt, args);
+  u64 written =
+      vsnprintf((new_base + dest->len), fmt_len_w_args + 1, fmt, args);
   va_end(args);
 
+  htils_assert(written == fmt_len_w_args && "Failed to write to buffer.");
+
   memcpy(new_base, dest->base, dest->len);
-  memcpy(new_base + dest->len, buf, fmt_len_w_args);
 
   dest->base = new_base;
   dest->len = len;
@@ -155,15 +205,31 @@ u64 h2o_string_concatf(h2o_mem_pool_t *pool, h2o_string *dest, const cstr *fmt,
 }
 
 b32 h2o_stringcmp(const h2o_string *first, const h2o_string *second) {
+  htils_assert(first && "First string cannot be null.");
+  htils_assert(second && "Second string cannot be null.");
+  htils_assert(first->len > 0 && "First string cannot be empty.");
+  htils_assert(second->len > 0 && "Second string cannot be empty.");
+  htils_assert(first->base && "First string base cannot be null.");
+  htils_assert(second->base && "Second string base cannot be null.");
+
   if (first->len != second->len)
     return false;
 
-  return h2o_memis(first->base, first->len, second->base, second->len);
+  return h2o_stringcmpb(first, second, first->len);
 }
 
 b32 h2o_stringcmpb(const h2o_string *first, const h2o_string *second,
                    const u64 len) {
-  return h2o_memis(first->base, len, second->base, len);
+  htils_assert(first && "First string cannot be null.");
+  htils_assert(second && "Second string cannot be null.");
+  htils_assert(len > 0 && "Length must be greater than 0.");
+
+  htils_assert(first->len > 0 && "First string cannot be empty.");
+  htils_assert(first->base && "First string base cannot be null.");
+  htils_assert(second->len > 0 && "Second string cannot be empty.");
+  htils_assert(second->base && "Second string base cannot be null.");
+
+  return memcmp(first->base, second->base, len) == 0;
 }
 
 //
@@ -175,6 +241,7 @@ u64 h2o_string_split(h2o_string *src, cstr delim, h2o_string ***h2o_darray,
   htils_assert(src && "Source string cannot be null.");
   htils_assert(src->base && "Source string base cannot be null.");
   htils_assert(src->len > 0 && "Source string cannot be empty.");
+
   htils_assert(h2o_darray && "Darray cannot be null.");
   htils_assert(pool && "Pool cannot be null.");
   htils_assert(delim > 0 && "Delimiter must be greater than 0.");
@@ -207,6 +274,7 @@ u64 h2o_string_split(h2o_string *src, cstr delim, h2o_string ***h2o_darray,
 void h2o_string_trim(h2o_string *str) {
   htils_assert(str && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
+  htils_assert(str->base && "String base cannot be null.");
 
   h2o_string_trim_left(str);
   h2o_string_trim_right(str);
@@ -219,10 +287,8 @@ void h2o_string_trim_left(h2o_string *str) {
   cstr *start = str->base;
   cstr *end = str->base + str->len;
 
-  while (start < end && (*start == ' ' || *start == '\t' || *start == '\n' ||
-                         *start == '\r')) {
+  while (start < end && is_whitespace(*start))
     start++;
-  }
 
   str->base = start;
   str->len = (u64)(end - start);
@@ -235,10 +301,8 @@ void h2o_string_trim_right(h2o_string *str) {
   cstr *start = str->base;
   cstr *end = str->base + str->len;
 
-  while (end > start && (*(end - 1) == ' ' || *(end - 1) == '\t' ||
-                         *(end - 1) == '\n' || *(end - 1) == '\r')) {
+  while (end > start && is_whitespace(*(end - 1)))
     end--;
-  }
 
   str->len = (u64)(end - start);
 }
@@ -253,11 +317,8 @@ i64 h2o_string_findc(h2o_string *haystack, char needle) {
   htils_assert(haystack->base && "Haystack base cannot be null.");
   htils_assert(needle > 0 && "Needle cannot be empty.");
 
-  for (cstr *p = haystack->base; p < haystack->base + haystack->len; p++)
-    if (*p == needle)
-      return (i64)(p - haystack->base);
-
-  return -1;
+  cstr *found = (cstr *)memchr(haystack->base, needle, haystack->len);
+  return found ? (i64)(found - haystack->base) : -1;
 }
 
 i64 h2o_string_find_sstr(h2o_string *haystack, h2o_string *needle) {
@@ -269,8 +330,9 @@ i64 h2o_string_find_sstr(h2o_string *haystack, h2o_string *needle) {
   htils_assert(needle->len > 0 && "Needle cannot be empty.");
   htils_assert(needle->base && "Needle base cannot be null.");
 
-  for (cstr *p = haystack->base; p < haystack->base + haystack->len; p++)
-    if (memcmp(needle->base, &(*p), needle->len) == 0)
+  for (cstr *p = haystack->base;
+       p <= haystack->base + haystack->len - needle->len; p++)
+    if (memcmp(needle->base, p, needle->len) == 0)
       return (i64)(p - haystack->base);
 
   return -1;

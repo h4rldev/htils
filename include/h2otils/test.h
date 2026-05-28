@@ -48,7 +48,7 @@
     h2o_mem_init_pool(&pool);                                                  \
     fprintf(stderr, "Running test: %s...\n", #name);                           \
     const cstr *result = h2otils_test_##name(&pool);                           \
-                                                                               \
+    h2o_mem_clear_pool(&pool);                                                 \
     if (!result)                                                               \
       fprintf(stderr, "   %sPASS%s: %s\n", COLOR_GREEN, COLOR_RESET, #name);   \
     else if (result[0] == '@') {                                               \

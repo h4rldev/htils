@@ -40,12 +40,19 @@ include_flags := '-I' + include
 link_flags := ''
 debug_shared_flags := '-ggdb -g -Og -fsanitize=address,undefined,leak -fno-sanitize-recover=all -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-common -std=gnu11 -Wl,-rpath,.'
 debug_compile_flags := debug_shared_flags + ' -Wall -Wextra -Wpedantic -Wno-unused-parameter'
-debug_link_flags := debug_shared_flags + link_flags + ' -static-libasan -lhtils-debug -Llib'
+htils_debug_link_flags := debug_shared_flags + link_flags + ' -static-libasan -lhtils-debug -Llib'
+h2otils_debug_link_flags := htils_debug_link_flags + ' -lh2otils-debug -lh2o'
+
 release_shared_flags := '-O2 -std=gnu11 -Wl,-rpath,.'
 release_compile_flags := release_shared_flags
-release_link_flags := release_shared_flags + link_flags + '  -lhtils -Llib'
-debug_static_link_flags := debug_link_flags + ' -static  -fPIC'
-release_static_link_flags := release_link_flags + ' -static -fPIC'
+htils_release_link_flags := release_shared_flags + link_flags + '  -lhtils -Llib'
+h2otils_release_link_flags := htils_release_link_flags + ' -lh2otils -lh2o'
+
+htils_debug_static_link_flags := htils_debug_link_flags + ' -static  -fPIC'
+h2otils_debug_static_link_flags := htils_debug_static_link_flags + ' -static  -fPIC'
+
+htils_release_static_link_flags := htils_release_link_flags + ' -static -fPIC'
+h2otils_release_static_link_flags := h2otils_release_link_flags + ' -static -fPIC'
 
 # Default justfile target (lists all available targets)
 default:
@@ -225,8 +232,8 @@ assemble-h2otils type="debug" force="false" static="dynamic":
 
     echo -e "Target: {{ green }}{{ type }}{{ reset }}"
     if [[ {{ type }} == "debug" ]]; then
-        ar -rcs {{ lib }}/lib2ohtils-{{ type }}.a {{ h2otils_out }}/*-{{ type }}.o
-        ranlib {{ lib }}/lib2ohtils-{{ type }}.a
+        ar -rcs {{ lib }}/libh2otils-{{ type }}.a {{ h2otils_out }}/*-{{ type }}.o
+        ranlib {{ lib }}/libh2otils-{{ type }}.a
     else
         if [[ {{ static }} == "dynamic" || {{ static }} == "false" ]]; then
             gcc -shared -o {{ lib }}/lib2ohtils.so {{ h2otils_out }}/*-release.o -fuse-ld=mold
@@ -346,9 +353,9 @@ link-htils-test type="debug" static="dynamic":
         echo -e "{{ reset }}"
 
         if [[ {{ type }} == "debug" ]]; then
-            gcc {{ htils_test_out }}/*-debug.o {{ debug_link_flags }} -o {{ bin }}/{{ htils_bin_name }}-debug -fuse-ld=mold
+            gcc {{ htils_test_out }}/*-debug.o {{ htils_debug_link_flags }} -o {{ bin }}/{{ htils_bin_name }}-debug -fuse-ld=mold
         else
-            gcc {{ htils_test_out }}/*-release.o {{ release_link_flags }} -o {{ bin }}/{{ htils_bin_name }} -fuse-ld=mold
+            gcc {{ htils_test_out }}/*-release.o {{ htils_release_link_flags }} -o {{ bin }}/{{ htils_bin_name }} -fuse-ld=mold
             strip --strip-all {{ bin }}/{{ htils_bin_name }}
         fi
         echo -e "Link (htils-test): Linking {{ green }}{{ type }}{{ reset }} dynamically complete"
@@ -357,7 +364,7 @@ link-htils-test type="debug" static="dynamic":
         echo -e "Files to link: {{ green }}"
         printf "%s\n" "${FILES[@]}" | sed 's/^/    /'
         echo -e "{{ reset }}"
-        gcc {{ htils_test_out }}/*-release.o {{ release_static_link_flags }} -o {{ bin }}/{{ htils_bin_name }}-static -fuse-ld=mold
+        gcc {{ htils_test_out }}/*-release.o {{ htils_release_static_link_flags }} -o {{ bin }}/{{ htils_bin_name }}-static -fuse-ld=mold
         strip --strip-all {{ bin }}/{{ htils_bin_name }}-static
         echo -e "Link (htils-test): Linking {{ green }}{{ type }}{{ reset }} statically complete"
     fi
@@ -484,9 +491,9 @@ link-h2otils-test type="debug" static="dynamic":
         echo -e "{{ reset }}"
 
         if [[ {{ type }} == "debug" ]]; then
-            gcc {{ h2otils_test_out }}/*-debug.o {{ debug_link_flags }} {{ h2otils_link_flags }} -o {{ bin }}/{{ h2otils_bin_name }}-debug -fuse-ld=mold
+            gcc {{ h2otils_test_out }}/*-debug.o {{ h2otils_debug_link_flags }} -o {{ bin }}/{{ h2otils_bin_name }}-debug -fuse-ld=mold
         else
-            gcc {{ h2otils_test_out }}/*-release.o {{ release_link_flags }} {{ h2otils_link_flags }} -o {{ bin }}/{{ h2otils_bin_name }} -fuse-ld=mold
+            gcc {{ h2otils_test_out }}/*-release.o {{ h2otils_release_link_flags }} -o {{ bin }}/{{ h2otils_bin_name }} -fuse-ld=mold
             strip --strip-all {{ bin }}/{{ h2otils_bin_name }}
         fi
         echo -e "Link (h2otils-test): Linking {{ green }}{{ type }}{{ reset }} dynamically complete"
@@ -495,7 +502,7 @@ link-h2otils-test type="debug" static="dynamic":
         echo -e "Files to link: {{ green }}"
         printf "%s\n" "${FILES[@]}" | sed 's/^/    /'
         echo -e "{{ reset }}"
-        gcc {{ htils_test_out }}/*-release.o {{ release_static_link_flags }} {{ h2otils_link_flags }} -o {{ bin }}/{{ h2otils_bin_name }}-static -fuse-ld=mold
+        gcc {{ htils_test_out }}/*-release.o {{ h2otils_release_static_link_flags }} -o {{ bin }}/{{ h2otils_bin_name }}-static -fuse-ld=mold
         strip --strip-all {{ bin }}/{{ h2otils_bin_name }}-static
         echo -e "Link (h2otils-test): Linking {{ green }}{{ type }}{{ reset }} statically complete"
     fi

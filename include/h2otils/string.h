@@ -21,6 +21,9 @@
 /** Type-alias for h2o_iovec_t. */
 typedef h2o_iovec_t h2o_string;
 
+/** Type-alias for h2o_string for slices. */
+typedef h2o_string h2o_string_slice;
+
 /**
  * @brief Creates a new \ref h2o_string.
  *
@@ -37,6 +40,28 @@ typedef h2o_iovec_t h2o_string;
  * @return A pointer to the new \ref h2o_string.
  */
 h2o_string *h2o_string_new(h2o_mem_pool_t *pool, const u64 len);
+
+/**
+ * @brief Creates a new \ref h2o_string from a C-string.
+ *
+ * @details Allocates a new \ref h2o_string with \ref h2o_string_new(),
+calculates the length with <a
+href="https://en.cppreference.com/c/string/byte/strlen"
+target="_blank">strlen()</a>, and then copies the contents of the C-string to
+the new string.
+ *
+ * @param pool The memory pool to allocate from.
+ * @param base The C-string to create the \ref h2o_string from.
+ *
+ * @pre @c pool and @c base must be valid and cannot be `null`.
+ *
+ * @return A pointer to the new \ref h2o_string.
+ *
+ * @see \ref h2o_string_new(), <a
+href="https://en.cppreference.com/c/string/byte/strlen"
+target="_blank">strlen()</a>.
+*/
+h2o_string *h2o_string_from_cstr(h2o_mem_pool_t *pool, const cstr *base);
 
 /**
  * @brief Converts a \ref string to a \ref h2o_string.
@@ -91,6 +116,55 @@ h2o_string *h2o_string_dup(h2o_mem_pool_t *pool, const h2o_string *str);
  * target="_blank">strlen()</a>.
  */
 h2o_string *h2o_string_from_cstr(h2o_mem_pool_t *pool, const cstr *str);
+
+//
+//
+//
+
+/**
+ * @brief Create a \ref h2o_string_slice from a C-string.
+ *
+ * @details We're using h2o_string_slice as a term to represent a value instead
+ * of a pointer, which helps with manpulation without allocations.
+ *
+ * @param base The C-string to create the \ref h2o_string_slice from.
+ * @param len The length of the C-string.
+ *
+ * @pre
+ * - @c base must be valid and cannot be `null`.
+ *- @c len must be greater than 0.
+ *
+ * @return A \ref h2o_string_slice
+ */
+h2o_string_slice h2o_string_slice_from_cstr(cstr *base, u64 len);
+
+/**
+ * @brief Create a \ref h2o_string_slice from a \ref h2o_string.
+ *
+ * @details We're using h2o_string_slice as a term to represent a value instead
+ * of a pointer, which helps with manpulation without allocations.
+ *
+ * @param str The \ref h2o_string to create the \ref h2o_string_slice from.
+ *
+ * @pre @c str must be valid and cannot be `null`.
+ *
+ * @return A \ref h2o_string_slice.
+ */
+h2o_string_slice h2o_string_slice_from_h2o_string(h2o_string *str);
+
+/**
+ * @brief Create a \ref h2o_string_slice from a \ref string.
+ *
+ * @details We're using h2o_string_slice as a term to represent a value instead
+ * of a pointer, which helps with manpulation without allocations.
+ *
+ * @param str The \ref string to create the \ref h2o_string_slice from.
+ *
+ * @pre @c str must be valid and cannot be `null`.
+ *
+ * @return A \ref h2o_string_slice.
+ */
+h2o_string_slice h2o_string_slice_from_string(string *str);
 
 //
 //

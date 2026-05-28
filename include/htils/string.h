@@ -63,31 +63,6 @@ typedef string_t string_nullable_t;
  */
 string *string_new(arena_t *arena, const u64 len);
 
-//
-//
-//
-
-/**
- * @brief Duplicates @c from to a new \ref string.
- *
- * @details Allocates a new \ref string with \ref string_new(), and copies the
- * contents to the new string.
- *
- * @param arena The \ref arena to allocate from.
- * @param from The \ref string to duplicate.
- *
- * @pre @c arena and @c from must be valid and cannot be `null`.
- *
- * @return A pointer to the new \ref string.
- *
- * @see \ref string_new()
- */
-string *string_dup(arena_t *arena, const string *from);
-
-//
-//
-//
-
 /**
  * @brief Create a \ref string from a C-string.
  *
@@ -166,6 +141,27 @@ string_slice string_slice_from_string(string *str);
  * @see \ref string, \ref cstr
  */
 cstr *string_to_cstr(const string *str);
+
+//
+//
+//
+
+/**
+ * @brief Duplicates @c from to a new \ref string.
+ *
+ * @details Allocates a new \ref string with \ref string_new(), and copies the
+ * contents to the new string.
+ *
+ * @param arena The \ref arena to allocate from.
+ * @param from The \ref string to duplicate.
+ *
+ * @pre @c arena and @c from must be valid and cannot be `null`.
+ *
+ * @return A pointer to the new \ref string.
+ *
+ * @see \ref string_new()
+ */
+string *string_dup(arena_t *arena, const string *from);
 
 //
 //

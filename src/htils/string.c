@@ -36,25 +36,6 @@ string *string_new(arena_t *arena, const u64 len) {
   return str;
 }
 
-//
-//
-//
-
-string *string_dup(arena_t *arena, const string *from) {
-  htils_assert(from && "String cannot be null.");
-  htils_assert(arena && "Arena cannot be null.");
-  htils_assert(from->len > 0 && "String cannot be empty.");
-
-  string *out = string_new(arena, from->len);
-  memcpy(out->base, from->base, from->len);
-
-  return out;
-}
-
-//
-//
-//
-
 string *string_from_cstr(arena_t *arena, const cstr *base) {
   htils_assert(base && "Base cannot be null.");
   htils_assert(arena && "Arena cannot be null.");
@@ -102,6 +83,21 @@ cstr *string_to_cstr(const string *str) {
 //
 //
 
+string *string_dup(arena_t *arena, const string *from) {
+  htils_assert(from && "String cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
+  htils_assert(from->len > 0 && "String cannot be empty.");
+
+  string *out = string_new(arena, from->len);
+  memcpy(out->base, from->base, from->len);
+
+  return out;
+}
+
+//
+//
+//
+
 u64 string_concat(arena_t *arena, string *dest, const string *src) {
   htils_assert(arena && "Arena cannot be null.");
   htils_assert(dest && "dest cannot be null.");
@@ -125,7 +121,11 @@ u64 string_concatb(arena_t *arena, string *dest, const string *src,
                    const u64 len) {
   htils_assert(arena && "Arena cannot be null.");
   htils_assert(dest && "Dest cannot be null.");
+  htils_assert(dest->len > 0 && "Dest cannot be empty.");
+  htils_assert(dest->base && "Dest base cannot be null.");
   htils_assert(src && "Src cannot be null.");
+  htils_assert(src->len > 0 && "Src cannot be empty.");
+  htils_assert(src->base && "Src base cannot be null.");
   htils_assert(len > 0 && "Length must be greater than 0.");
 
   u8 *new_base = arena_alloc(arena, u8, dest->len + len);
@@ -142,6 +142,8 @@ u64 string_concatb(arena_t *arena, string *dest, const string *src,
 u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...) {
   htils_assert(arena && "Arena cannot be null.");
   htils_assert(dest && "Dest cannot be null.");
+  htils_assert(dest->len > 0 && "Dest cannot be empty.");
+  htils_assert(dest->base && "Dest base cannot be null.");
   htils_assert(fmt && "Format cannot be null.");
 
   va_list args;
@@ -174,8 +176,8 @@ u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...) {
 //
 
 b32 stringcmp(const string *first, const string *second) {
-  htils_assert(first != null && "First string cannot be null.");
-  htils_assert(second != null && "Second string cannot be null.");
+  htils_assert(first && "First string cannot be null.");
+  htils_assert(second && "Second string cannot be null.");
   htils_assert(first->len > 0 && "First string cannot be empty.");
   htils_assert(second->len > 0 && "Second string cannot be empty.");
   htils_assert(first->base && "First string base cannot be null.");
@@ -205,13 +207,13 @@ b32 stringcmpb(const string *first, const string *second, const u64 len) {
 //
 
 u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena) {
-  htils_assert(src != null && "Source string cannot be null.");
-  htils_assert(darray != null && "Darray cannot be null.");
-  htils_assert(arena != null && "Arena cannot be null.");
-  htils_assert(delim > 0 && "Delimiter must be greater than 0.");
-
+  htils_assert(src && "Source string cannot be null.");
   htils_assert(src->len > 0 && "Source string cannot be empty.");
   htils_assert(src->base && "Source string base cannot be null.");
+
+  htils_assert(darray && "Darray cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
+  htils_assert(delim > 0 && "Delimiter must be greater than 0.");
 
   u64 count = 0;
   u8 *start = src->base;
@@ -241,38 +243,37 @@ u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena) {
 void string_trim(string *str) {
   htils_assert(str != null && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
+  htils_assert(str->base && "String base cannot be null.");
 
   string_trim_left(str);
   string_trim_right(str);
 }
 
 void string_trim_left(string *str) {
-  htils_assert(str != null && "String cannot be null.");
+  htils_assert(str && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
   htils_assert(str->base && "String base cannot be null.");
 
   u8 *start = str->base;
   u8 *end = str->base + str->len;
 
-  while (start < end && is_whitespace(*start)) {
+  while (start < end && is_whitespace(*start))
     start++;
-  }
 
   str->base = start;
   str->len = (u64)(end - start);
 }
 
 void string_trim_right(string *str) {
-  htils_assert(str != null && "String cannot be null.");
+  htils_assert(str && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
   htils_assert(str->base && "String base cannot be null.");
 
   u8 *start = str->base;
   u8 *end = str->base + str->len;
 
-  while (end > start && is_whitespace(*(end - 1))) {
+  while (end > start && is_whitespace(*(end - 1)))
     end--;
-  }
 
   str->len = (u64)(end - start);
 }

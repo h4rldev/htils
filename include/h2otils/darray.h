@@ -20,7 +20,7 @@
  * @param cap The capacity of the dynamic array.
  * @param len The length of the dynamic array.
  */
-typedef struct h2o_h2o_da_header {
+typedef struct h2o_da_header {
   u64 cap;
   u64 len;
 } h2o_da_header_t;
@@ -112,10 +112,12 @@ static inline h2o_da_header_t *h2o_da__hdr(void *h2o_da) {
     htils_assert(darray != null && "Darray cannot be null.");                  \
     htils_assert(item != null && "Item cannot be null.");                      \
                                                                                \
-    if (!(darray) || h2o_da__hdr(darray)->len >= h2o_da__hdr(darray)->cap) {   \
-      u64 old_capacity = h2o_da__hdr(darray)->cap;                             \
-      u64 new_capacity = old_capacity ? old_capacity * 2 : 8;                  \
-      u64 old_len = h2o_da__hdr(darray)->len;                                  \
+    if (!(darray) || h2o_da_len(darray) >= h2o_da_cap(darray)) {               \
+      u64 old_capacity = h2o_da_cap(darray);                                   \
+      u64 new_capacity =                                                       \
+          old_capacity ? old_capacity + old_capacity / 2 + (old_capacity % 2)  \
+                       : 8;                                                    \
+      u64 old_len = h2o_da_len(darray);                                        \
       u64 alloc_size = H2O_DA_HEADER_SIZE + new_capacity;                      \
                                                                                \
       h2o_da_header_t *header =                                                \
