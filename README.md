@@ -47,7 +47,8 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 
 > Final note in the features tab
 >
-> This library is mostly documented, so if you need help on how to use each respective api, read the header files in `./include` </br>
+> This library is mostly documented, so if you need help on how to use each respective api, read the header files in `./include`
+>
 > If you want a nice little documentation site, run doxygen in a clone of this repo and open index.html in `./doc/html`
 >
 > Edit: The documentation site is now deployed to [https://htils.h4rl.dev](https://htils.h4rl.dev)!
@@ -64,59 +65,83 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 
 ### htils
 
-> Arena allocator </br>
-> htils/arena.h for documentation and function exports. </br>
-> htils/arena.c for implementation.
+> Arena allocator
 
-> Strings </br>
-> htils/string.h for documentation and function exports. </br>
-> htils/string.c for implementation.
+htils/arena.h for documentation and function exports.
 
-> Assert </br>
-> htils/assert.h for documentation and function exports. </br>
-> htils/assert.c for implementation.
+htils/arena.c for implementation.
 
-> Stringmap </br>
-> htils/stringmap.h for documentation and function exports. </br>
-> htils/stringmap.c for implementation.
+> Strings
 
-> Path manipulation </br>
-> htils/path.h for documentation and function exports. </br>
-> htils/path.c for implementation.
+htils/string.h for documentation and function exports.
 
-> Dynamic arrays </br>
-> htils/darray.h for documentation and implementation.
+htils/string.c for implementation.
 
-> File IO </br>
-> htils/file.h for documentation and function exports. </br>
-> htils/file.c for implementation.
+> Assert
 
-> Cli parser </br>
-> htils/cli.h for documentation and function exports. </br>
-> htils/cli.c for implementation.
+htils/assert.h for documentation and function exports.
 
-> .env parser </br>
-> htils/dotenv.h for documentation and function exports. </br>
-> htils/dotenv.c for implementation.
+htils/assert.c for implementation.
 
-> Test framework </br>
-> htils/test.h for documentation, and implementation.
+> Stringmap
+
+htils/stringmap.h for documentation and function exports.
+
+htils/stringmap.c for implementation.
+
+> Path manipulation
+
+htils/path.h for documentation and function exports.
+
+htils/path.c for implementation.
+
+> Dynamic arrays
+
+htils/darray.h for documentation and implementation.
+
+> File IO
+
+htils/file.h for documentation and function exports.
+
+htils/file.c for implementation.
+
+> Cli parser
+
+htils/cli.h for documentation and function exports.
+
+htils/cli.c for implementation.
+
+> .env parser
+
+htils/dotenv.h for documentation and function exports.
+
+htils/dotenv.c for implementation.
+
+> Test framework
+
+htils/test.h for documentation, and implementation.
 
 ### h2otils
 
-> Cookie generation </br>
-> h2otils/cookie.h for documentation and function exports. </br>
-> h2otils/cookie.c for implementation (WIP).
+> Cookie generation
 
-> Dynamic arrays </br>
-> h2otils/darray.h for documentation and implementation (WIP). </br>
+h2otils/cookie.h for documentation and function exports.
 
-> String manipulation </br>
-> h2otils/string.h for documentation and function exports. </br>
-> h2otils/string.c for implementation (WIP).
+h2otils/cookie.c for implementation (WIP).
 
-> Test framework </br>
-> h2otils/test.h for documentation and implementation (WIP).
+> Dynamic arrays
+
+h2otils/darray.h for documentation and implementation (WIP).
+
+> String manipulation
+
+h2otils/string.h for documentation and function exports.
+
+h2otils/string.c for implementation (WIP).
+
+> Test framework
+
+h2otils/test.h for documentation and implementation (WIP).
 
 ## Building
 
