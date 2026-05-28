@@ -1,8 +1,6 @@
 #ifndef HTILS_TEST_H
 #define HTILS_TEST_H
 
-#include <stdlib.h>
-
 //
 //
 //
@@ -14,13 +12,6 @@
 #define COLOR_CYAN "\x1b[36m"
 #define COLOR_RED "\x1b[31m"
 #define COLOR_RESET "\x1b[0m"
-
-//
-//
-//
-
-/** Test function type. */
-typedef const cstr *test_fn(arena_t *arena);
 
 //
 //
