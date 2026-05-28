@@ -10,6 +10,9 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 - [Features](#features)
   - [htils](#htils)
   - [h2otils](#h2otils)
+- [Files](#files)
+  - [htils](#htils-1)
+  - [h2otils](#h2otils-1)
 - [Building](#building)
   - [Prerequisites](#prerequisites)
   - [How to build](#how-to-build)
@@ -31,49 +34,20 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
   - `ucstr`
   - `null`
 
-- A small and flexible reserve and commit arena.
-
-  > Available through htils/arena.h
-
+- A small and flexible reserve and commit arena allocator.
 - A string type based on unsigned 8bit integers, with tons of features for its manipulation.
-
-  > Available through htils/string.h
-
 - A custom assert that uses exit() instead of abort().
-
-  > Available through htils/assert.h
-
 - A simple stringmap, that isn't super type-agnostic, but it works well enough.
-
-  > Available through htils/stringmap.h
-
 - Path manipulation.
-
-  > Available through htils/path.h
-
 - Type-agnostic dynamic arrays.
-
-  > Available through htils/darray.h
-
 - File IO.
-
-  > Available through htils/file.h
-
 - An easy to use cli parser.
-
-  > Available through htils/cli.h
-
 - A dotenv parser.
-
-  > Available through htils/dotenv.h
-
-- A tiny test suite.
-  > Available through htils/test.h
+- A tiny test framework.
 
 > Final note in the features tab
 >
-> This library is mostly documented, so if you need help on how to use each respective api, read the header files in `./include`
->
+> This library is mostly documented, so if you need help on how to use each respective api, read the header files in `./include` </br>
 > If you want a nice little documentation site, run doxygen in a clone of this repo and open index.html in `./doc/html`
 >
 > Edit: The documentation site is now deployed to [https://htils.h4rl.dev](https://htils.h4rl.dev)!
@@ -81,14 +55,68 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 ### h2otils
 
 - Cookie generation.
-
-  > Available through h2otils/cookie.h
-
-- String manipulation.
-
-  > Available through h2otils/string.h
-
+- String manipulation based on h2o_iovec_t.
+- h2o Memory Pool based dynamic arrays
+- Variant of the htils test framework for h2o.
 - More to come...
+
+## Files
+
+### htils
+
+> Arena allocator </br>
+> htils/arena.h for documentation and function exports. </br>
+> htils/arena.c for implementation.
+
+> Strings </br>
+> htils/string.h for documentation and function exports. </br>
+> htils/string.c for implementation.
+
+> Assert </br>
+> htils/assert.h for documentation and function exports. </br>
+> htils/assert.c for implementation.
+
+> Stringmap </br>
+> htils/stringmap.h for documentation and function exports. </br>
+> htils/stringmap.c for implementation.
+
+> Path manipulation </br>
+> htils/path.h for documentation and function exports. </br>
+> htils/path.c for implementation.
+
+> Dynamic arrays </br>
+> htils/darray.h for documentation and implementation.
+
+> File IO </br>
+> htils/file.h for documentation and function exports. </br>
+> htils/file.c for implementation.
+
+> Cli parser </br>
+> htils/cli.h for documentation and function exports. </br>
+> htils/cli.c for implementation.
+
+> .env parser </br>
+> htils/dotenv.h for documentation and function exports. </br>
+> htils/dotenv.c for implementation.
+
+> Test framework </br>
+> htils/test.h for documentation, and implementation.
+
+### h2otils
+
+> Cookie generation </br>
+> h2otils/cookie.h for documentation and function exports. </br>
+> h2otils/cookie.c for implementation (WIP).
+
+> Dynamic arrays </br>
+> h2otils/darray.h for documentation and implementation (WIP). </br>
+
+> String manipulation </br>
+> h2otils/string.h for documentation and function exports. </br>
+> h2otils/string.c for implementation (WIP).
+
+> Test framework </br>
+> h2otils/test.h for documentation and implementation (WIP).
 
 ## Building
 
