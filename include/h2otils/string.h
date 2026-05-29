@@ -94,29 +94,6 @@ h2o_string *h2o_string_from_string(h2o_mem_pool_t *pool, const string *str);
  */
 h2o_string *h2o_string_dup(h2o_mem_pool_t *pool, const h2o_string *str);
 
-/**
- * @brief Create a \ref h2o_string from a C-string.
- *
- * @details Since \ref h2o_string is a wrapper around the C-string pretty much,
- * It simply creates a new \ref h2o_string with \ref h2o_string_new(), and then
- * copies the contents of the C-string to the new string calculating the \ref
- * string's length with <a
- * href="https://en.cppreference.com/c/string/byte/strlen"
- * target="_blank">strlen()</a>.
- *
- * @param pool The memory pool to allocate the string from.
- * @param base The C-string to create the \ref h2o_string from.
- *
- * @pre @c pool and @c base must be valid and cannot be `null`.
- *
- * @return A pointer to the new h2o_string.
- *
- * @see \ref h2o_string_new(), <a
- * href="https://en.cppreference.com/c/string/byte/strlen"
- * target="_blank">strlen()</a>.
- */
-h2o_string *h2o_string_from_cstr(h2o_mem_pool_t *pool, const cstr *str);
-
 //
 //
 //
@@ -382,5 +359,12 @@ i64 h2o_string_findc(h2o_string *haystack, char needle);
  * @return The index of the first occurance of the \ref h2o_string, or -1 if not
  */
 i64 h2o_string_find_sstr(h2o_string *haystack, h2o_string *needle);
+
+//
+//
+//
+
+/** Macro to make \ref h2o_string_from_cstr() require less typing. */
+#define H2OTILS_STR(lit) h2o_string_from_cstr(pool, lit)
 
 #endif // H2OTILS_STRING_H

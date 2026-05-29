@@ -1,12 +1,6 @@
 #ifndef H2OTILS_TEST_H
 #define H2OTILS_TEST_H
 
-#include <stdlib.h>
-
-//
-//
-//
-
 #include <h2o/memory.h>
 
 //

@@ -86,6 +86,7 @@ static inline h2o_da_header_t *h2o_da__hdr(void *h2o_da) {
                                                                                \
     h2o_da_header_t *header = h2o_mem_alloc_pool((pool), darray, alloc_size);  \
     header->cap = capacity;                                                    \
+    header->len = 0;                                                           \
     (darray) = (void *)(header + 1);                                           \
   } while (0)
 
@@ -159,7 +160,7 @@ static inline h2o_da_header_t *h2o_da__hdr(void *h2o_da) {
  */
 #define h2o_da_last(darray)                                                    \
   (htils_assert(h2o_da__hdr(darray)->len > 0),                                 \
-   (darray)[da__hdr(darray)->len - 1])
+   (darray)[h2o_da__hdr(darray)->len - 1])
 
 /**
  * @brief Clears a dynamic array.
