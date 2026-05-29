@@ -574,7 +574,7 @@ H2OTILS_TEST(h2o_string_split) {
 //
 //
 
-H2OTILS_TEST(cookie_new) {
+H2OTILS_TEST(h2o_cookie_new) {
   h2o_cookie_t *cookie =
       h2o_cookie_new(pool, H2OTILS_STR("meow"), H2OTILS_STR("meow"));
 
@@ -605,18 +605,18 @@ H2OTILS_TEST(cookie_new) {
 
 H2OTILS_TEST(h2o_cookie_from_string) {
   h2o_string *str = h2o_string_from_cstr(
-      pool, "meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 1 Jun 2026 "
+      pool, "meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 01 Jun 2026 "
             "09:22:50 GMT; secure; httponly");
 
   H2OTILS_TEST_ASSERT(str, "String is null.");
-  H2OTILS_TEST_ASSERT(str->len == 91, "String length is not 91.");
+  H2OTILS_TEST_ASSERT(str->len == 92, "String length is not 92.");
   H2OTILS_TEST_ASSERT(str->base, "String base is null.");
   H2OTILS_TEST_ASSERT(
       memcmp(str->base,
-             "meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 1 Jun 2026 "
+             "meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 01 Jun 2026 "
              "09:22:50 GMT; secure; httponly",
-             91) == 0,
-      "String is not 'meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 1 Jun "
+             92) == 0,
+      "String is not 'meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 01 Jun "
       "2026 09:22:50 GMT; secure; httponly'.");
 
   h2o_cookie_t *cookie = h2o_cookie_from_string(pool, str);
@@ -654,14 +654,14 @@ H2OTILS_TEST(h2o_cookie_from_string) {
                       "Cookie http_only is not true.");
   H2OTILS_TEST_ASSERT(cookie->expires != -1, "Cookie expires is -1.");
   H2OTILS_TEST_ASSERT(cookie->expires_str, "Cookie expires str is null.");
-  H2OTILS_TEST_ASSERT(cookie->expires_str->len == 28,
-                      "Cookie expires str length is not 28.");
+  H2OTILS_TEST_ASSERT(cookie->expires_str->len == 29,
+                      "Cookie expires str length is not 29.");
   H2OTILS_TEST_ASSERT(cookie->expires_str->base,
                       "Cookie expires str base is null.");
   H2OTILS_TEST_ASSERT(
-      memcmp(cookie->expires_str->base, "mon, 1 jun 2026 09:22:50 gmt", 28) ==
+      memcmp(cookie->expires_str->base, "mon, 01 jun 2026 09:22:50 gmt", 29) ==
           0,
-      "Cookie expires str is not 'mon, 1 Jun 2026 09:22:50 gmt'.");
+      "Cookie expires str is not 'mon, 01 Jun 2026 09:22:50 gmt'.");
 
   return H2OTILS_TEST_PASS;
 }
@@ -698,7 +698,7 @@ int main(void) {
 
   H2OTILS_TEST_RUN(h2o_string_split);
 
-  H2OTILS_TEST_RUN(cookie_new);
+  H2OTILS_TEST_RUN(h2o_cookie_new);
   H2OTILS_TEST_RUN(h2o_cookie_from_string);
 
   H2OTILS_TEST_RESULT();

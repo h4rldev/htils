@@ -103,14 +103,13 @@ h2o_string *h2o_cookie_to_string(h2o_mem_pool_t *pool, h2o_cookie_t *cookie);
  * @param pool The memory pool to allocate the cookie from.
  * @param cookie The cookie to add the parameter to.
  * @param param The parameter to add.
- * @param val The value of the parameter, if the value is not a pointer, simply
- * get its memory address through &.
+ * @param ... The value of the parameter, as provided by variadic args.
  *
  * @pre
  * - @c pool, @c cookie, and @c val must be valid and cannot be `null`.
  * - @c param must be a valid parameter.
  */
 void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
-                          h2o_cookie_param_t param, void *val);
+                          h2o_cookie_param_t param, ...);
 
 #endif // H2OTILS_COOKIE_H

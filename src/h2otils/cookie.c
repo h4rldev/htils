@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <stdarg.h>
 #include <time.h>
 
 #include <h2o/memory.h>
@@ -97,29 +98,33 @@ static b32 parse_imf_fixdate(const cstr *date_str, time_t *result) {
   struct tm tm = {0};
   i32 month = 0, day = 0, year = 0, hour = 0, min = 0, sec = 0;
 
-  if (strlen(date_str) < 28) {
-    fprintf(stderr, "IMF-fixdate string is too short.\n");
+  if (strlen(date_str) < 29) {
+    fprintf(stderr, "Date string is too short.\n");
     return false;
   }
 
   if (date_str[3] != ',' && date_str[4] != ' ') {
-    fprintf(stderr, "IMF-fixdate string is invalid.\n");
+    fprintf(stderr, "Date string is invalid.\n");
     return false;
   }
 
   day = parse_str_to_num(&date_str[5], 2);
-  month = parse_3let_month(&date_str[7]);
-  year = parse_str_to_num(&date_str[11], 4);
-  hour = parse_str_to_num(&date_str[16], 2);
-  min = parse_str_to_num(&date_str[19], 2);
-  sec = parse_str_to_num(&date_str[22], 2);
+  month = parse_3let_month(&date_str[8]);
+  year = parse_str_to_num(&date_str[12], 4);
+  hour = parse_str_to_num(&date_str[17], 2);
+  min = parse_str_to_num(&date_str[20], 2);
+  sec = parse_str_to_num(&date_str[23], 2);
 
-  if (date_str[25] != 'g' && date_str[26] != 'm' && date_str[27] != 't') {
-    fprintf(stderr, "IMF-fixdate string is invalid, missing 'GMT'.\n");
-    fprintf(stderr, "Invalid IMF-fixdate string: %s\n", date_str);
-    fprintf(stderr, "Expected 'G' at position 25 found %c\n", date_str[25]);
-    fprintf(stderr, "Expected 'M' at position 26 found %c\n", date_str[26]);
-    fprintf(stderr, "Expected 'T' at position 27 found %c\n", date_str[27]);
+  if (date_str[26] != 'g' && date_str[27] != 'm' && date_str[28] != 't' &&
+      date_str[26] != 'u' && date_str[27] != 't' && date_str[28] != 'c') {
+    fprintf(stderr, "Date string is invalid, missing 'gmt' or 'utc'.\n");
+    fprintf(stderr, "Invalid Date string: %s\n", date_str);
+    fprintf(stderr, "Expected 'g' or 'u' at position 26, found %c\n",
+            date_str[26]);
+    fprintf(stderr, "Expected 'm' or 't' at position 27, found %c\n",
+            date_str[27]);
+    fprintf(stderr, "Expected 't' pr 'c' at position 28, found %c\n",
+            date_str[28]);
     return false;
   }
 
@@ -131,91 +136,6 @@ static b32 parse_imf_fixdate(const cstr *date_str, time_t *result) {
     tm.tm_hour = hour;
     tm.tm_min = min;
     tm.tm_sec = sec;
-    tm.tm_isdst = 0;
-
-    *result = timegm(&tm);
-    return (*result != -1);
-  }
-
-  return false;
-}
-
-static b32 parse_rfc_850(const cstr *date_str, time_t *result) {
-  struct tm tm = {0};
-  i32 month = 0, day = 0, year = 0, hour = 0, min = 0, sec = 0;
-
-  if (date_str[8] != ',' && date_str[9] != ' ')
-    return false;
-
-  if (date_str[12] != '-')
-    return false;
-
-  day = parse_str_to_num(&date_str[10], 2);
-  month = parse_3let_month(&date_str[13]);
-  year = parse_str_to_num(&date_str[17], 2);
-  hour = parse_str_to_num(&date_str[20], 2);
-  min = parse_str_to_num(&date_str[23], 2);
-  sec = parse_str_to_num(&date_str[26], 2);
-
-  if (date_str[29] != 'G' && date_str[30] != 'M' && date_str[31] != 'T')
-    return false;
-
-  if (year < 50)
-    year += 2000;
-  else
-    year += 1900;
-
-  if (month >= 0 && day >= 1 && day <= 31 && hour >= 0 && hour < 24 &&
-      min >= 0 && min < 60 && sec >= 0 && sec < 60) {
-    tm.tm_mday = day;
-    printf("tm.tm_mday: %d\n", tm.tm_mday);
-    tm.tm_mon = month;
-    printf("tm.tm_mon: %d\n", tm.tm_mon);
-    tm.tm_year = year - 1900;
-    printf("tm.tm_year: %d\n", tm.tm_year);
-    tm.tm_hour = hour;
-    printf("tm.tm_hour: %d\n", tm.tm_hour);
-    tm.tm_min = min;
-    printf("tm.tm_min: %d\n", tm.tm_min);
-    tm.tm_sec = sec;
-    printf("tm.tm_sec: %d\n", tm.tm_sec);
-    tm.tm_isdst = 0;
-
-    *result = timegm(&tm);
-    return (*result != -1);
-  }
-
-  return false;
-}
-
-static b32 parse_asctime(const cstr *date_str, time_t *result) {
-  struct tm tm = {0};
-  i32 month = 0, day = 0, year = 0, hour = 0, min = 0, sec = 0;
-
-  if (date_str[3] != ' ')
-    return false;
-
-  month = parse_3let_month(&date_str[4]);
-  day = parse_str_to_num(&date_str[8], 2);
-  hour = parse_str_to_num(&date_str[11], 2);
-  min = parse_str_to_num(&date_str[14], 2);
-  sec = parse_str_to_num(&date_str[17], 2);
-  year = parse_str_to_num(&date_str[20], 4);
-
-  if (month >= 0 && day >= 1 && day <= 31 && year >= 1970 && hour >= 0 &&
-      hour < 24 && min >= 0 && min < 60 && sec >= 0 && sec < 60) {
-    tm.tm_mday = day;
-    printf("tm.tm_mday: %d\n", tm.tm_mday);
-    tm.tm_mon = month;
-    printf("tm.tm_mon: %d\n", tm.tm_mon);
-    tm.tm_year = year - 1900;
-    printf("tm.tm_year: %d\n", tm.tm_year);
-    tm.tm_hour = hour;
-    printf("tm.tm_hour: %d\n", tm.tm_hour);
-    tm.tm_min = min;
-    printf("tm.tm_min: %d\n", tm.tm_min);
-    tm.tm_sec = sec;
-    printf("tm.tm_sec: %d\n", tm.tm_sec);
     tm.tm_isdst = 0;
 
     *result = timegm(&tm);
@@ -226,17 +146,10 @@ static b32 parse_asctime(const cstr *date_str, time_t *result) {
 }
 
 static b32 parse_http_date(const cstr *date_cstr, time_t *result) {
-  if (date_cstr[3] == ',' && date_cstr[4] == ' ') {
-    fprintf(stderr, "Trying IMF-fixdate.\n");
+  if (date_cstr[3] == ',' && date_cstr[4] == ' ')
     return parse_imf_fixdate(date_cstr, result);
-  } else if (date_cstr[8] == ',' && date_cstr[9] == ' ') {
-    fprintf(stderr, "Trying RFC-850.\n");
-    return parse_rfc_850(date_cstr, result);
-  } else if (date_cstr[3] == ' ') {
-    fprintf(stderr, "Trying asctime.\n");
-    return parse_asctime(date_cstr, result);
-  }
 
+  fprintf(stderr, "Unknown date format.\n");
   return false;
 }
 
@@ -267,8 +180,10 @@ h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string *name,
                              const h2o_string *value) {
   h2o_cookie_t *cookie = h2o_mem_alloc_pool(pool, h2o_cookie_t, 1);
   *cookie = (h2o_cookie_t){0};
+
   cookie->name = h2o_string_dup(pool, name);
   cookie->value = h2o_string_dup(pool, value);
+
   cookie->max_age = -1;
   cookie->expires = -1;
   cookie->same_site = INVALID;
@@ -304,6 +219,7 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
       .base = strings[0]->base,
       .len = idx,
   };
+
   h2o_string_slice cookie_value_slice = (h2o_string_slice){
       .base = strings[0]->base + idx + 1,
       .len = strings[0]->len - idx - 1,
@@ -383,4 +299,113 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
   }
 
   return cookie;
+}
+
+void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
+                          h2o_cookie_param_t param, ...) {
+  va_list args;
+  va_start(args, null);
+
+  switch (param) {
+  case HTTP_ONLY:
+    cookie->http_only = !cookie->http_only;
+    break;
+
+  case SECURE:
+    cookie->secure = !cookie->secure;
+    break;
+
+  case SAME_SITE: {
+    h2o_same_site_args_t val = va_arg(args, h2o_same_site_args_t);
+    if (val == -1 || val > STRICT) {
+      fprintf(stderr, "SameSite is INVALID.\n");
+      return;
+    }
+
+    cookie->same_site = val;
+  } break;
+
+  case PATH: {
+    h2o_string *val = va_arg(args, h2o_string *);
+    if (!val) {
+      fprintf(stderr, "Path value is null.\n");
+      return;
+    }
+
+    if (val->len == 0) {
+      fprintf(stderr, "Path value is empty.\n");
+      return;
+    }
+
+    if (!val->base) {
+      fprintf(stderr, "Path value base is null.\n");
+      return;
+    }
+
+    if (val->base[0] != '/') {
+      fprintf(stderr, "Path value must start with '/'.\n");
+      return;
+    }
+
+    cookie->path = h2o_string_dup(pool, val);
+  } break;
+
+  case EXPIRES: {
+    h2o_string *value = va_arg(args, h2o_string *);
+    if (value) {
+      fprintf(stderr, "Expires value is null.\n");
+      return;
+    }
+
+    if (value->len < 29) {
+      fprintf(stderr, "Expires value is invalid.\n");
+      return;
+    }
+
+    if (!value->base) {
+      fprintf(stderr, "Expires value base is null.\n");
+      return;
+    }
+
+    i64 expires;
+    cstr *expires_cstr = h2o_string_to_cstr(value);
+    if (!validate_expires(expires_cstr, &expires)) {
+      fprintf(stderr, "Invalid expires cookie value.\n");
+      return;
+    }
+
+    cookie->expires = expires;
+    cookie->expires_str = h2o_string_from_cstr(pool, expires_cstr);
+  } break;
+
+  case MAX_AGE: {
+    i64 val = va_arg(args, i64);
+    if (val <= 0) {
+      fprintf(stderr, "Max-Age is invalid.\n");
+      return;
+    }
+
+    cookie->max_age = time(null) + val;
+  } break;
+
+  case DOMAIN: {
+    h2o_string *val = va_arg(args, h2o_string *);
+    if (!val) {
+      fprintf(stderr, "Domain value is null.\n");
+      return;
+    }
+
+    if (val->len == 0) {
+      fprintf(stderr, "Domain value is empty.\n");
+      return;
+    }
+
+    if (!val->base) {
+      fprintf(stderr, "Domain value base is null.\n");
+      return;
+    }
+
+    cookie->domain = h2o_string_dup(pool, val);
+  } break;
+  }
 }
