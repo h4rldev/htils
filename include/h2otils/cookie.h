@@ -26,7 +26,9 @@ typedef struct h2o_cookie {
   h2o_string *value;
   h2o_string *domain;
   h2o_string *path;
+  h2o_string *expires_str;
 
+  i64 expires;
   i64 max_age;
   h2o_same_site_args_t same_site;
   b32 secure;
