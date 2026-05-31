@@ -236,7 +236,7 @@ assemble-h2otils type="debug" force="false" static="dynamic":
         ranlib {{ lib }}/libh2otils-{{ type }}.a
     else
         if [[ {{ static }} == "dynamic" || {{ static }} == "false" ]]; then
-            gcc -shared -o {{ lib }}/lib2ohtils.so {{ h2otils_out }}/*-release.o -fuse-ld=mold
+            gcc -shared -o {{ lib }}/libh2otils.so {{ h2otils_out }}/*-release.o -fuse-ld=mold
             strip {{ lib }}/libh2otils.so
             cp {{ lib }}/libh2otils.so {{ bin }}
         else
@@ -246,7 +246,7 @@ assemble-h2otils type="debug" force="false" static="dynamic":
         fi
     fi
 
-    echo -e "Assemble (ht2otils): Assemble {{ green }}{{ type }}{{ reset }} complete"
+    echo -e "Assemble (h2otils): Assemble {{ green }}{{ type }}{{ reset }} complete"
 
 compile-htils-test type="debug" force="false" threads=num_cpus():
     #!/usr/bin/env bash

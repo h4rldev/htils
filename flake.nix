@@ -14,7 +14,123 @@
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = import nixpkgs {inherit system;};
     in {
-      packages.default = pkgs.stdenv.mkDerivation {
+      packages.h2otils = pkgs.stdenv.mkDerivation {
+        pname = "h2otils";
+        version = "0.1.0";
+
+        src = ./.;
+
+        nativeBuildInputs = [
+          pkgs.just
+          pkgs.gcc
+          pkgs.mold
+          pkgs.doxygen
+          pkgs.h2o
+          self.packages.${system}.htils
+        ];
+
+        outputs = ["out" "doc"];
+
+        buildPhase = ''
+          runHook preBuild
+          sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
+          just h2otils-release
+
+          doxygen
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out/lib
+          mkdir -p $out/include/h2otils/
+          mkdir -p $doc/share/doc/h2otils/
+
+          cp lib/libh2otils.so $out/lib
+          cp include/h2otils.h $out/include
+          cp -r include/h2otils/* $out/include/h2otils/
+          cp -r doc/html/* $doc/share/doc/h2otils/
+
+          runHook postInstall
+        '';
+      };
+
+      packages.h2otils-static = pkgs.stdenv.mkDerivation {
+        pname = "h2otils-static";
+        version = "0.1.0";
+
+        src = ./.;
+
+        nativeBuildInputs = with pkgs; [just gcc mold glibc.static doxygen h2o];
+
+        outputs = ["out" "doc"];
+
+        buildPhase = ''
+          runHook preBuild
+          sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
+          just h2otils-release static
+
+          doxygen
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out/lib
+          mkdir -p $out/include/h2otils/
+          mkdir -p $doc/share/doc/h2otils/
+
+          cp lib/libh2otils.a $out/lib
+          cp include/h2otils.h $out/include
+          cp -r include/h2otils/* $out/include/h2otils/
+          cp -r doc/html/* $doc/share/doc/h2otils/
+
+          runHook postInstall
+        '';
+      };
+
+      packages.h2otils-debug = pkgs.stdenv.mkDerivation {
+        pname = "h2otils-debug";
+        version = "0.1.0";
+
+        src = ./.;
+
+        nativeBuildInputs = [
+          pkgs.just
+          pkgs.gcc
+          pkgs.mold
+          pkgs.doxygen
+          pkgs.h2o
+          self.packages.${system}.htils-debug
+        ];
+
+        outputs = ["out" "doc"];
+
+        buildPhase = ''
+          runHook preBuild
+          sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
+          just h2otils-debug
+
+          doxygen
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out/lib
+          mkdir -p $out/include/h2otils/
+          mkdir -p $doc/share/doc/h2otils/
+
+          cp lib/libh2otils-debug.a $out/lib
+          cp include/h2otils.h $out/include
+          cp -r include/h2otils/* $out/include/h2otils/
+          cp -r doc/html/* $doc/share/doc/h2otils/
+
+          runHook postInstall
+        '';
+      };
+
+      packages.htils = pkgs.stdenv.mkDerivation {
         pname = "htils";
         version = "0.1.0";
 
@@ -27,7 +143,7 @@
         buildPhase = ''
           runHook preBuild
           sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
-          just release
+          just htils-release
 
           doxygen
           runHook postBuild
@@ -48,7 +164,7 @@
         '';
       };
 
-      packages.static = pkgs.stdenv.mkDerivation {
+      packages.htils-static = pkgs.stdenv.mkDerivation {
         pname = "htils-static";
         version = "0.1.0";
 
@@ -61,7 +177,7 @@
         buildPhase = ''
           runHook preBuild
           sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
-          just release static
+          just htils-release static
 
           doxygen
           runHook postBuild
@@ -82,7 +198,7 @@
         '';
       };
 
-      packages.debug = pkgs.stdenv.mkDerivation {
+      packages.htils-debug = pkgs.stdenv.mkDerivation {
         pname = "htils-debug";
         version = "0.1.0";
 
@@ -95,7 +211,7 @@
         buildPhase = ''
           runHook preBuild
           sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
-          just debug
+          just htils-debug
           doxygen
           runHook postBuild
         '';

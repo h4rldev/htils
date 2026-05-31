@@ -1,5 +1,5 @@
-#ifndef H2OTILS_DARRAY
-#define H2OTILS_DARRAY
+#ifndef H2OTILS_DARRAY_H
+#define H2OTILS_DARRAY_H
 
 #include <h2o/memory.h>
 
@@ -176,4 +176,4 @@ static inline h2o_da_header_t *h2o_da__hdr(void *h2o_da) {
       h2o_da__hdr(darray)->len = 0;                                            \
   } while (0)
 
-#endif // !H2OTILS_DARRAY
+#endif // !H2OTILS_DARRAY_H

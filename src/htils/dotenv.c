@@ -22,7 +22,7 @@
 /**
  * @brief Check if a path is a .env file.
  *
- * @details By first retrieveing its extension, and then verifying that the
+ * @details By first retrieving its extension, and then verifying that the
  * extension is .env.
  *
  * @param arena The arena to allocate from.

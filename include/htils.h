@@ -14,7 +14,7 @@
 #include <htils/basictypes.h>
 #endif
 
-#ifdef USE_ALL
+#ifdef HTILS_USE_ALL
 #include <htils/arena.h>
 #include <htils/assert.h>
 #include <htils/darray.h>
@@ -25,42 +25,42 @@
 #include <htils/test.h>
 #endif
 
-#ifdef USE_MUSTHAVES
+#ifdef HTILS_USE_MUSTHAVES
 #include <htils/arena.h>
 #include <htils/assert.h>
 #include <htils/darray.h>
 #include <htils/string.h>
 #endif
 
-#ifdef USE_ARENA
+#ifdef HTILS_USE_ARENA
 #include <htils/arena.h>
 #endif
 
-#ifdef USE_ASSERT
+#ifdef HTILS_USE_ASSERT
 #include <htils/assert.h>
 #endif
 
-#ifdef USE_DARRAY
+#ifdef HTILS_USE_DARRAY
 #include <htils/darray.h>
 #endif
 
-#ifdef USE_FILE
+#ifdef HTILS_USE_FILE
 #include <htils/file.h>
 #endif
 
-#ifdef USE_HASHMAP
-#include <htils/hashmap.h>
+#ifdef HTILS_USE_STRINGMAP
+#include <htils/stringmap.h>
 #endif
 
-#ifdef USE_PATH
+#ifdef HTILS_USE_PATH
 #include <htils/path.h>
 #endif
 
-#ifdef USE_STRING
+#ifdef HTILS_USE_STRING
 #include <htils/string.h>
 #endif
 
-#ifdef USE_TEST
+#ifdef HTILS_USE_TEST
 #include <htils/test.h>
 #endif
 
