@@ -180,8 +180,7 @@ h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string **names,
                              const h2o_string **values, const u64 amount) {
   h2o_cookie_t *cookie = h2o_mem_alloc_pool(pool, h2o_cookie_t, 1);
   *cookie = (h2o_cookie_t){0};
-
-  cookie->map = h2o_sm_new(pool, amount);
+  h2o_stringmap_t *map = h2o_sm_new(pool, 1);
 
   for (u64 i = 0; i < amount; i++) {
     if (!names[i] || !values[i]) {
@@ -189,9 +188,10 @@ h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string **names,
       return null;
     }
 
-    h2o_sm_insert(cookie->map, names[i], values[i]);
+    h2o_sm_insert(map, names[i], values[i]);
   }
 
+  cookie->map = map;
   cookie->max_age = -1;
   cookie->expires = -1;
   cookie->same_site = INVALID;
@@ -221,8 +221,7 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
   *cookie = (h2o_cookie_t){0};
   cookie->same_site = INVALID;
   cookie->max_age = -1;
-
-  h2o_stringmap_t *map = h2o_sm_new(pool, 2);
+  cookie->map = h2o_sm_new(pool, 1);
 
   static const known_attr_t known_attrs[7] = {
       {.name = "path", .name_len = 4},     {.name = "domain", .name_len = 6},
@@ -303,7 +302,7 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
     h2o_string *name = h2o_string_dup(pool, &name_slice);
     h2o_string *value = h2o_string_dup(pool, &value_slice);
 
-    h2o_sm_insert(map, name, value);
+    h2o_sm_insert(cookie->map, name, value);
   }
 
   if (is_attr_only && h2o_da_len(strings) > 0) {
@@ -316,8 +315,7 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
       h2o_string *name = h2o_string_dup(pool, &name_slice);
       h2o_string *value = h2o_string_dup(pool, &value_slice);
 
-      h2o_sm_insert(map, name, value);
-
+      h2o_sm_insert(cookie->map, name, value);
       first_attr_idx = 1;
     } else {
       fprintf(stderr, "Malformed cookie: no valid name=value pair found.\n");
@@ -325,12 +323,10 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
     }
   }
 
-  if (map->count == 0) {
+  if (cookie->map->count == 0) {
     fprintf(stderr, "Malformed cookie: no valid name=value pairs found.\n");
     return null;
   }
-
-  cookie->map = map;
 
   for (u64 i = first_attr_idx; i < h2o_da_len(strings); i++) {
     i64 idx = h2o_string_findc(strings[i], '=');

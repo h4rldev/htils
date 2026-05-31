@@ -574,6 +574,106 @@ H2OTILS_TEST(h2o_string_split) {
 //
 //
 
+H2OTILS_TEST(h2o_sm_new) {
+  h2o_stringmap_t *map = h2o_sm_new(pool, 2);
+
+  H2OTILS_TEST_ASSERT(map, "Map is null.");
+  H2OTILS_TEST_ASSERT(map->capacity == 2, "Map capacity is not 2.");
+  H2OTILS_TEST_ASSERT(map->count == 0, "Map count is not 0.");
+  H2OTILS_TEST_ASSERT(map->dead_entries == 0, "Map dead_entries is not 0.");
+  H2OTILS_TEST_ASSERT(map->entries, "Map entries is null.");
+  H2OTILS_TEST_ASSERT(map->pool, "Map pool is null.");
+
+  return H2OTILS_TEST_PASS;
+}
+
+H2OTILS_TEST(h2o_sm_insert) {
+  h2o_stringmap_t *map = h2o_sm_new(pool, 2);
+
+  H2OTILS_TEST_ASSERT(map, "Map is null.");
+  H2OTILS_TEST_ASSERT(map->capacity == 2, "Map capacity is not 2.");
+  H2OTILS_TEST_ASSERT(map->count == 0, "Map count is not 0.");
+  H2OTILS_TEST_ASSERT(map->dead_entries == 0, "Map dead_entries is not 0.");
+  H2OTILS_TEST_ASSERT(map->entries, "Map entries is null.");
+  H2OTILS_TEST_ASSERT(map->pool, "Map pool is null.");
+
+  h2o_string *key = h2o_string_from_cstr(pool, "meow");
+  h2o_string *value = h2o_string_from_cstr(pool, "meow2");
+
+  h2o_stringmap_result_t res = h2o_sm_insert(map, key, value);
+  H2OTILS_TEST_ASSERT(res == CREATED, "Map insert result is not CREATED.");
+  H2OTILS_TEST_ASSERT(map->count == 1, "Map count is not 1.");
+  H2OTILS_TEST_ASSERT(map->dead_entries == 0, "Map dead_entries is not 0.");
+  H2OTILS_TEST_ASSERT(map->entries, "Map entries is null.");
+  H2OTILS_TEST_ASSERT(map->pool, "Map pool is null.");
+
+  return H2OTILS_TEST_PASS;
+}
+
+H2OTILS_TEST(h2o_sm_kill) {
+  h2o_stringmap_t *map = h2o_sm_new(pool, 2);
+
+  H2OTILS_TEST_ASSERT(map, "Map is null.");
+  H2OTILS_TEST_ASSERT(map->capacity == 2, "Map capacity is not 2.");
+  H2OTILS_TEST_ASSERT(map->count == 0, "Map count is not 0.");
+  H2OTILS_TEST_ASSERT(map->dead_entries == 0, "Map dead_entries is not 0.");
+  H2OTILS_TEST_ASSERT(map->entries, "Map entries is null.");
+  H2OTILS_TEST_ASSERT(map->pool, "Map pool is null.");
+
+  h2o_string *key = h2o_string_from_cstr(pool, "meow");
+  h2o_string *value = h2o_string_from_cstr(pool, "meow2");
+
+  h2o_stringmap_result_t res = h2o_sm_insert(map, key, value);
+  H2OTILS_TEST_ASSERT(res == CREATED, "Map insert result is not CREATED.");
+  H2OTILS_TEST_ASSERT(map->count == 1, "Map count is not 1.");
+  H2OTILS_TEST_ASSERT(map->dead_entries == 0, "Map dead_entries is not 0.");
+  H2OTILS_TEST_ASSERT(map->entries, "Map entries is null.");
+  H2OTILS_TEST_ASSERT(map->pool, "Map pool is null.");
+
+  res = h2o_sm_kill(map, key);
+  H2OTILS_TEST_ASSERT(res == KILLED, "Map kill result is not KILLED.");
+  H2OTILS_TEST_ASSERT(map->count == 0, "Map count is not 0.");
+  H2OTILS_TEST_ASSERT(map->dead_entries == 1, "Map dead_entries is not 1.");
+  H2OTILS_TEST_ASSERT(map->entries, "Map entries is null.");
+  H2OTILS_TEST_ASSERT(map->pool, "Map pool is null.");
+
+  return H2OTILS_TEST_PASS;
+}
+
+H2OTILS_TEST(h2o_sm_get) {
+  h2o_stringmap_t *map = h2o_sm_new(pool, 2);
+
+  H2OTILS_TEST_ASSERT(map, "Map is null.");
+  H2OTILS_TEST_ASSERT(map->capacity == 2, "Map capacity is not 2.");
+  H2OTILS_TEST_ASSERT(map->count == 0, "Map count is not 0.");
+  H2OTILS_TEST_ASSERT(map->dead_entries == 0, "Map dead_entries is not 0.");
+  H2OTILS_TEST_ASSERT(map->entries, "Map entries is null.");
+  H2OTILS_TEST_ASSERT(map->pool, "Map pool is null.");
+
+  h2o_string *key = h2o_string_from_cstr(pool, "meow");
+  h2o_string *value = h2o_string_from_cstr(pool, "meow2");
+
+  h2o_stringmap_result_t res = h2o_sm_insert(map, key, value);
+  H2OTILS_TEST_ASSERT(res == CREATED, "Map insert result is not CREATED.");
+  H2OTILS_TEST_ASSERT(map->count == 1, "Map count is not 1.");
+  H2OTILS_TEST_ASSERT(map->dead_entries == 0, "Map dead_entries is not 0.");
+  H2OTILS_TEST_ASSERT(map->entries, "Map entries is null.");
+  H2OTILS_TEST_ASSERT(map->pool, "Map pool is null.");
+
+  h2o_string *val = h2o_sm_get(map, key);
+  H2OTILS_TEST_ASSERT(val, "Map value is null.");
+  H2OTILS_TEST_ASSERT(val->len == 5, "Map value length is not 5.");
+  H2OTILS_TEST_ASSERT(val->base, "Map value base is null.");
+  H2OTILS_TEST_ASSERT(memcmp(val->base, "meow2", 5) == 0,
+                      "Map value is not 'meow2'.");
+
+  return H2OTILS_TEST_PASS;
+}
+
+//
+//
+//
+
 H2OTILS_TEST(h2o_cookie_new) {
   const h2o_string *name = H2OTILS_STR("meow");
   const h2o_string *value = H2OTILS_STR("meow2");
@@ -592,9 +692,8 @@ H2OTILS_TEST(h2o_cookie_new) {
 
   H2OTILS_TEST_ASSERT(cookie->map, "Cookie names is null.");
 
-  h2o_string *cookie_value = h2o_sm_get(cookie->map, H2OTILS_STR("meow"));
+  h2o_string *cookie_value = h2o_sm_get(cookie->map, name);
   H2OTILS_TEST_ASSERT(cookie_value, "Couldn't get value.");
-  fprintf(stderr, "Cookie value: %lu\n", cookie_value->len);
   H2OTILS_TEST_ASSERT(cookie_value->len == 5, "Cookie value length is not 5.");
   H2OTILS_TEST_ASSERT(cookie_value->base, "Cookie value base is null.");
 
@@ -626,14 +725,15 @@ H2OTILS_TEST(h2o_cookie_from_string) {
   H2OTILS_TEST_ASSERT(cookie->map->count == 2,
                       "Cookie's stringmap count is not 2.");
 
-  h2o_string *first_cookie_value = h2o_sm_get(cookie->map, H2OTILS_STR("meow"));
-  h2o_string *second_cookie_value =
-      h2o_sm_get(cookie->map, H2OTILS_STR("meowmeow"));
+  const h2o_string *name = H2OTILS_STR("meow");
+  const h2o_string *name2 = H2OTILS_STR("meowmeow");
+
+  h2o_string *first_cookie_value = h2o_sm_get(cookie->map, name);
+  h2o_string *second_cookie_value = h2o_sm_get(cookie->map, name2);
 
   H2OTILS_TEST_ASSERT(first_cookie_value, "Couldn't get first value.");
   H2OTILS_TEST_ASSERT(first_cookie_value->len == 5,
                       "First value's length is not 5.");
-  fprintf(stderr, "First Cookie value: %lu\n", first_cookie_value->len);
   H2OTILS_TEST_ASSERT(first_cookie_value->base, "First value's base is null.");
   H2OTILS_TEST_ASSERT(memcmp(first_cookie_value->base, "meow2", 5) == 0,
                       "First value is not 'meow2'.");
@@ -696,7 +796,6 @@ H2OTILS_TEST(h2o_cookie_add_param) {
 
   h2o_string *cookie_value = h2o_sm_get(cookie->map, H2OTILS_STR("meow"));
   H2OTILS_TEST_ASSERT(cookie_value, "Couldn't get value.");
-  fprintf(stderr, "Cookie value: %lu\n", cookie_value->len);
   H2OTILS_TEST_ASSERT(cookie_value->len == 5, "Cookie value length is not 5.");
   H2OTILS_TEST_ASSERT(cookie_value->base, "Cookie value base is null.");
 
@@ -756,6 +855,11 @@ int main(void) {
   H2OTILS_TEST_RUN(h2o_da_clear);
 
   H2OTILS_TEST_RUN(h2o_string_split);
+
+  H2OTILS_TEST_RUN(h2o_sm_new);
+  H2OTILS_TEST_RUN(h2o_sm_insert);
+  H2OTILS_TEST_RUN(h2o_sm_kill);
+  H2OTILS_TEST_RUN(h2o_sm_get);
 
   H2OTILS_TEST_RUN(h2o_cookie_new);
   H2OTILS_TEST_RUN(h2o_cookie_from_string);

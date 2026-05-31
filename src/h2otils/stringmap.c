@@ -58,19 +58,29 @@ static u64 hash_key(const h2o_string *key) {
  *  - @c vsize must be greater than 0 and the explicit size of the value, since
  * @value is a void * it has to be provided.
  */
+
 static void sm_insert_direct(h2o_stringmap_t *map, const h2o_string *key,
                              void *value, u64 vsize) {
-  u64 idx = hash_key(key) % map->capacity;
+  u64 start_idx = hash_key(key) % map->capacity;
+  u64 idx = start_idx;
+
   for (;;) {
+    if (idx == start_idx)
+      return;
+
     h2o_stringmap_entry_t *entry = &map->entries[idx];
+
     if (entry->state != OCCUPIED) {
-      entry->key = (h2o_string *)key;
-      entry->value = value;
+      entry->key = h2o_string_dup(map->pool, key);
+      entry->value = h2o_mem_alloc_pool(map->pool, void *, vsize);
+      memcpy(entry->value, value, vsize);
+
       entry->vsize = vsize;
       entry->state = OCCUPIED;
       map->count++;
       return;
     }
+
     idx = (idx + 1) % map->capacity;
   }
 }
@@ -85,26 +95,25 @@ static void sm_insert_direct(h2o_stringmap_t *map, const h2o_string *key,
  *
  * @pre @c map must be valid and cannot be `null`.
  */
-
 static void h2o_sm_grow(h2o_stringmap_t *map) {
-  htils_assert(map && "stringmap cannot be null.");
+  htils_assert(map && "map cannot be null.");
+
   u64 old_capacity = map->capacity;
   h2o_stringmap_entry_t *old_entries = map->entries;
   u64 old_dead_entries = map->dead_entries;
+
   map->count = 0;
   map->capacity *= 2;
   map->entries =
       h2o_mem_alloc_pool(map->pool, h2o_stringmap_entry_t, map->capacity);
+  for (u64 i = 0; i < map->capacity; ++i) {
+    map->entries[i].state = EMPTY;
+  }
 
-  for (u64 i = 0; i < old_capacity; i++) {
-    if (old_entries[i].state == OCCUPIED) {
-      h2o_string *new_key = h2o_string_dup(map->pool, old_entries[i].key);
-
-      void *old_value = old_entries[i].value;
-      u64 old_vsize = old_entries[i].vsize;
-
-      sm_insert_direct(map, new_key, old_value, old_vsize);
-    }
+  for (u64 i = 0; i < old_capacity; ++i) {
+    if (old_entries[i].state == OCCUPIED)
+      sm_insert_direct(map, old_entries[i].key, old_entries[i].value,
+                       old_entries[i].vsize);
   }
 
   map->dead_entries = old_dead_entries;
@@ -120,7 +129,7 @@ h2o_stringmap_t *h2o_sm_new(h2o_mem_pool_t *pool, const u64 capacity) {
   h2o_stringmap_t *map = h2o_mem_alloc_pool(pool, h2o_stringmap_t, 1);
   map->pool = pool;
 
-  if (capacity > 0) {
+  if (capacity >= 2) {
     map->entries = h2o_mem_alloc_pool(pool, h2o_stringmap_entry_t, capacity);
     map->capacity = capacity;
   } else {
@@ -172,10 +181,7 @@ h2o_stringmap_result_t __h2o_sm_insert(h2o_stringmap_t *map,
       }
 
       entry->key = h2o_string_dup(map->pool, key);
-      entry->value = h2o_mem_alloc_pool_aligned(map->pool, vsize, 1);
-
-      fprintf(stderr, "Allocated %lu bytes for value.\n", vsize);
-      fprintf(stderr, "Value's len: %lu\n", ((h2o_string *)value)->len);
+      entry->value = h2o_mem_alloc_pool(map->pool, void *, vsize);
 
       memcpy(entry->value, value, vsize);
       entry->state = OCCUPIED;
@@ -192,7 +198,7 @@ h2o_stringmap_result_t __h2o_sm_insert(h2o_stringmap_t *map,
           memcpy(entry->value, value, vsize);
           entry->vsize = vsize;
         } else {
-          entry->value = h2o_mem_alloc_pool_aligned(map->pool, vsize, 1);
+          entry->value = h2o_mem_alloc_pool(map->pool, void *, vsize);
           memcpy(entry->value, value, vsize);
           entry->vsize = vsize;
         }
