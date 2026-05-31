@@ -260,6 +260,40 @@ b32 h2o_stringcmp(const h2o_string *first, const h2o_string *second);
 b32 h2o_stringcmpb(const h2o_string *first, const h2o_string *second,
                    const u64 len);
 
+/**
+ * @brief Compare each \ref h2o_string, ignoring case.
+ *
+ * @details By using memcmp, compare each \ref h2o_string to check if they're
+ * equal, ignoring case.
+ *
+ * @param first The first \ref h2o_string to compare.
+ * @param second The second \ref h2o_string to compare.
+ *
+ * @pre @c first and @c second must be valid and cannot be `null`.
+ *
+ * @return True if equal, false if not.
+ */
+b32 h2o_stringcmp_case(const h2o_string *first, const h2o_string *second);
+
+/**
+ * @brief Compare @c len bytes of each \ref h2o_string, ignoring case.
+ *
+ * @details By using memcmp, compare @c len bytes of each \ref h2o_string to
+ * check if they're equal, ignoring case.
+ *
+ * @param first The first \ref h2o_string to compare.
+ * @param second The second \ref h2o_string to compare.
+ * @param len The length of the bytes to compare.
+ *
+ * @pre
+ * - @c first and @c second must be valid and cannot be `null`.
+ * - @c len must be greater than 0.
+ *
+ * @return True if the \ref h2o_strings are equal, false if they're not.
+ */
+b32 h2o_stringcmpb_case(const h2o_string *first, const h2o_string *second,
+                        const u64 len);
+
 //
 //
 //

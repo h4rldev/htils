@@ -115,15 +115,15 @@ static b32 parse_imf_fixdate(const cstr *date_str, time_t *result) {
   min = parse_str_to_num(&date_str[20], 2);
   sec = parse_str_to_num(&date_str[23], 2);
 
-  if (date_str[26] != 'g' && date_str[27] != 'm' && date_str[28] != 't' &&
-      date_str[26] != 'u' && date_str[27] != 't' && date_str[28] != 'c') {
-    fprintf(stderr, "Date string is invalid, missing 'gmt' or 'utc'.\n");
+  if (date_str[26] != 'G' && date_str[27] != 'M' && date_str[28] != 'T' &&
+      date_str[26] != 'U' && date_str[27] != 'T' && date_str[28] != 'C') {
+    fprintf(stderr, "Date string is invalid, missing 'GMT' or 'UTC'.\n");
     fprintf(stderr, "Invalid Date string: %s\n", date_str);
-    fprintf(stderr, "Expected 'g' or 'u' at position 26, found %c\n",
+    fprintf(stderr, "Expected 'G' or 'U' at position 26, found %c\n",
             date_str[26]);
-    fprintf(stderr, "Expected 'm' or 't' at position 27, found %c\n",
+    fprintf(stderr, "Expected 'M' or 'T' at position 27, found %c\n",
             date_str[27]);
-    fprintf(stderr, "Expected 't' pr 'c' at position 28, found %c\n",
+    fprintf(stderr, "Expected 'T' pr 'C' at position 28, found %c\n",
             date_str[28]);
     return false;
   }
@@ -176,13 +176,21 @@ static b32 validate_expires(const cstr *expires_str, i64 *expires) {
 //
 //
 
-h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string *name,
-                             const h2o_string *value) {
+h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string **names,
+                             const h2o_string **values, const u64 amount) {
   h2o_cookie_t *cookie = h2o_mem_alloc_pool(pool, h2o_cookie_t, 1);
   *cookie = (h2o_cookie_t){0};
 
-  cookie->name = h2o_string_dup(pool, name);
-  cookie->value = h2o_string_dup(pool, value);
+  cookie->map = h2o_sm_new(pool, amount);
+
+  for (u64 i = 0; i < amount; i++) {
+    if (!names[i] || !values[i]) {
+      fprintf(stderr, "Invalid cookie name or value.\n");
+      return null;
+    }
+
+    h2o_sm_insert(cookie->map, names[i], values[i]);
+  }
 
   cookie->max_age = -1;
   cookie->expires = -1;
@@ -190,6 +198,11 @@ h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string *name,
 
   return cookie;
 }
+
+typedef struct known_attr {
+  cstr *name;
+  u64 name_len;
+} known_attr_t;
 
 h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
                                      const h2o_string *str) {
@@ -204,38 +217,126 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
   for (u64 i = 0; i < h2o_da_len(strings); i++)
     h2o_string_trim(strings[i]);
 
-  i64 idx = h2o_string_findc(strings[0], '=');
-  if (idx == -1) {
-    fprintf(stderr, "Cookie string is invalid.\n");
-    return null;
-  }
-
   h2o_cookie_t *cookie = h2o_mem_alloc_pool(pool, h2o_cookie_t, 1);
   *cookie = (h2o_cookie_t){0};
   cookie->same_site = INVALID;
   cookie->max_age = -1;
 
-  h2o_string_slice cookie_name_slice = (h2o_string_slice){
-      .base = strings[0]->base,
-      .len = idx,
+  h2o_stringmap_t *map = h2o_sm_new(pool, 2);
+
+  static const known_attr_t known_attrs[7] = {
+      {.name = "path", .name_len = 4},     {.name = "domain", .name_len = 6},
+      {.name = "max-age", .name_len = 7},  {.name = "samesite", .name_len = 8},
+      {.name = "expires", .name_len = 7},  {.name = "secure", .name_len = 6},
+      {.name = "httponly", .name_len = 8},
   };
+  static const u64 known_attrs_len = 7;
 
-  h2o_string_slice cookie_value_slice = (h2o_string_slice){
-      .base = strings[0]->base + idx + 1,
-      .len = strings[0]->len - idx - 1,
-  };
+  b32 is_attr_only = true;
+  u64 first_attr_idx = h2o_da_len(strings);
 
-  cookie->name = h2o_string_dup(pool, &cookie_name_slice);
-  cookie->value = h2o_string_dup(pool, &cookie_value_slice);
+  for (u64 i = 0; i < h2o_da_len(strings); i++) {
+    i64 idx = h2o_string_findc(strings[i], '=');
+    if (idx == -1) {
+      u64 str_len = strings[i]->len;
+      b32 is_attr = false;
 
-  for (u64 i = 1; i < h2o_da_len(strings); i++) {
-    to_lower(strings[i]);
+      for (u64 j = 0; j < known_attrs_len; j++) {
+        u64 attr_len = known_attrs[j].name_len;
+        if (str_len == attr_len &&
+            strncasecmp(strings[i]->base, known_attrs[j].name, attr_len) == 0) {
+          is_attr = true;
+          break;
+        }
+      }
 
-    idx = h2o_string_findc(strings[i], '=');
-    h2o_string_slice key_slice = {0};
-    h2o_string_slice value_slice = {0};
+      if (is_attr) {
+        if (i < first_attr_idx)
+          first_attr_idx = i;
+        continue;
+      } else {
+        fprintf(stderr,
+                "Malformed cookie segment: missing '=' at position %lu\n", i);
+        return null;
+      }
+    }
+
+    if (idx >= (i64)strings[i]->len) {
+      fprintf(
+          stderr,
+          "Malformed cookie segment: '=' at end of string at position %lu\n",
+          i);
+      return null;
+    }
+
+    h2o_string_slice key_slice = (h2o_string_slice){
+        .base = strings[i]->base,
+        .len = idx,
+    };
+
+    b32 is_attr = false;
+    for (u64 j = 0; j < known_attrs_len; j++) {
+      u64 attr_len = known_attrs[j].name_len;
+      if (key_slice.len == attr_len &&
+          strncasecmp(key_slice.base, known_attrs[j].name, attr_len) == 0) {
+        is_attr = true;
+        if (i < first_attr_idx)
+          first_attr_idx = i;
+        break;
+      }
+    }
+
+    if (is_attr)
+      continue;
+
+    is_attr_only = false;
+
+    h2o_string_slice name_slice = (h2o_string_slice){
+        .base = strings[i]->base,
+        .len = idx,
+    };
+    h2o_string_slice value_slice = (h2o_string_slice){
+        .base = strings[i]->base + idx + 1,
+        .len = strings[i]->len - idx - 1,
+    };
+
+    h2o_string *name = h2o_string_dup(pool, &name_slice);
+    h2o_string *value = h2o_string_dup(pool, &value_slice);
+
+    h2o_sm_insert(map, name, value);
+  }
+
+  if (is_attr_only && h2o_da_len(strings) > 0) {
+    i64 idx = h2o_string_findc(strings[0], '=');
+    if (idx != -1 && idx < (i64)strings[0]->len) {
+      h2o_string_slice name_slice = {.base = strings[0]->base, .len = idx};
+      h2o_string_slice value_slice = {.base = strings[0]->base + idx + 1,
+                                      .len = strings[0]->len - idx - 1};
+
+      h2o_string *name = h2o_string_dup(pool, &name_slice);
+      h2o_string *value = h2o_string_dup(pool, &value_slice);
+
+      h2o_sm_insert(map, name, value);
+
+      first_attr_idx = 1;
+    } else {
+      fprintf(stderr, "Malformed cookie: no valid name=value pair found.\n");
+      return null;
+    }
+  }
+
+  if (map->count == 0) {
+    fprintf(stderr, "Malformed cookie: no valid name=value pairs found.\n");
+    return null;
+  }
+
+  cookie->map = map;
+
+  for (u64 i = first_attr_idx; i < h2o_da_len(strings); i++) {
+    i64 idx = h2o_string_findc(strings[i], '=');
 
     if (idx == -1) {
+      to_lower(strings[i]);
       if (strings[i]->len == 6 && memcmp(strings[i]->base, "secure", 6) == 0)
         cookie->secure = true;
       else if (strings[i]->len == 8 &&
@@ -245,16 +346,19 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
     }
 
     if (idx >= (i64)strings[i]->len) {
-      fprintf(stderr, "Malformed cookie attribute\n");
+      fprintf(stderr, "Malformed cookie attribute at position %lu\n", i);
       return null;
     }
 
-    key_slice = (h2o_string_slice){
+    for (u64 k = 0; k < (u64)idx; k++) {
+      strings[i]->base[k] = tolower(strings[i]->base[k]);
+    }
+
+    h2o_string_slice key_slice = {
         .base = strings[i]->base,
         .len = idx,
     };
-
-    value_slice = (h2o_string_slice){
+    h2o_string_slice value_slice = {
         .base = strings[i]->base + idx + 1,
         .len = strings[i]->len - idx - 1,
     };
@@ -272,16 +376,21 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
         fprintf(stderr, "Failed to parse max-age cookie\n");
         return null;
       }
+
       cookie->max_age = max_age;
     }
 
     else if (key_slice.len == 8 && memcmp(key_slice.base, "samesite", 8) == 0) {
-      if (value_slice.len == 3 && memcmp(value_slice.base, "lax", 3) == 0)
+      h2o_string samesite_value = {value_slice.base, value_slice.len};
+      to_lower(&samesite_value);
+
+      if (samesite_value.len == 3 && memcmp(samesite_value.base, "lax", 3) == 0)
         cookie->same_site = LAX;
-      else if (value_slice.len == 6 &&
-               memcmp(value_slice.base, "strict", 6) == 0)
+      else if (samesite_value.len == 6 &&
+               memcmp(samesite_value.base, "strict", 6) == 0)
         cookie->same_site = STRICT;
-      else if (value_slice.len == 4 && memcmp(value_slice.base, "none", 4) == 0)
+      else if (samesite_value.len == 4 &&
+               memcmp(samesite_value.base, "none", 4) == 0)
         cookie->same_site = NONE;
     }
 
@@ -294,12 +403,16 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
       }
 
       cookie->expires = expires;
-      cookie->expires_str = h2o_string_from_cstr(pool, expires_cstr);
+      cookie->expires_str = h2o_string_dup(pool, &value_slice);
     }
   }
 
   return cookie;
 }
+
+//
+//
+//
 
 void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
                           h2o_cookie_param_t param, ...) {
@@ -326,56 +439,40 @@ void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
   } break;
 
   case PATH: {
-    h2o_string *val = va_arg(args, h2o_string *);
+    cstr *val = va_arg(args, cstr *);
     if (!val) {
       fprintf(stderr, "Path value is null.\n");
       return;
     }
 
-    if (val->len == 0) {
-      fprintf(stderr, "Path value is empty.\n");
-      return;
-    }
-
-    if (!val->base) {
-      fprintf(stderr, "Path value base is null.\n");
-      return;
-    }
-
-    if (val->base[0] != '/') {
+    if (val[0] != '/') {
       fprintf(stderr, "Path value must start with '/'.\n");
       return;
     }
 
-    cookie->path = h2o_string_dup(pool, val);
+    cookie->path = h2o_string_from_cstr(pool, val);
   } break;
 
   case EXPIRES: {
-    h2o_string *value = va_arg(args, h2o_string *);
-    if (value) {
+    cstr *val = va_arg(args, cstr *);
+    if (!val) {
       fprintf(stderr, "Expires value is null.\n");
       return;
     }
 
-    if (value->len < 29) {
+    if (strlen(val) < 29) {
       fprintf(stderr, "Expires value is invalid.\n");
       return;
     }
 
-    if (!value->base) {
-      fprintf(stderr, "Expires value base is null.\n");
-      return;
-    }
-
     i64 expires;
-    cstr *expires_cstr = h2o_string_to_cstr(value);
-    if (!validate_expires(expires_cstr, &expires)) {
+    if (!validate_expires(val, &expires)) {
       fprintf(stderr, "Invalid expires cookie value.\n");
       return;
     }
 
     cookie->expires = expires;
-    cookie->expires_str = h2o_string_from_cstr(pool, expires_cstr);
+    cookie->expires_str = h2o_string_from_cstr(pool, val);
   } break;
 
   case MAX_AGE: {
@@ -389,23 +486,148 @@ void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
   } break;
 
   case DOMAIN: {
-    h2o_string *val = va_arg(args, h2o_string *);
+    cstr *val = va_arg(args, cstr *);
     if (!val) {
       fprintf(stderr, "Domain value is null.\n");
       return;
     }
 
-    if (val->len == 0) {
-      fprintf(stderr, "Domain value is empty.\n");
-      return;
-    }
-
-    if (!val->base) {
-      fprintf(stderr, "Domain value base is null.\n");
-      return;
-    }
-
-    cookie->domain = h2o_string_dup(pool, val);
+    cookie->domain = h2o_string_from_cstr(pool, val);
   } break;
   }
+}
+
+//
+//
+//
+
+h2o_string *h2o_cookie_to_string(h2o_mem_pool_t *pool, h2o_cookie_t *cookie) {
+  if (!cookie) {
+    fprintf(stderr, "Cookie is null.\n");
+    return null;
+  }
+
+  if (!cookie->map && cookie->map->count == 0) {
+    fprintf(stderr, "Cookie's stringmap is null.\n");
+    return null;
+  }
+
+  cstr buf[4096] = {0}; // Max length a cookie can be.
+  u64 len = 0;
+
+#define APPEND(str, str_len)                                                   \
+  do {                                                                         \
+    if (len + (str_len) >= sizeof(buf)) {                                      \
+      fprintf(stderr, "Cookie string exceeds buffer size.\n");                 \
+      return null;                                                             \
+    }                                                                          \
+    memcpy(buf + len, str, str_len);                                           \
+    len += (str_len);                                                          \
+  } while (0)
+
+  b32 first = true;
+
+  for (u64 i = 0; i < cookie->map->capacity; i++) {
+    h2o_stringmap_entry_t *entry = &cookie->map->entries[i];
+
+    if (entry->state == OCCUPIED && entry->key && entry->value) {
+      if (!first) {
+        APPEND("; ", 2);
+      }
+      first = false;
+      h2o_string *value = entry->value;
+      h2o_string *key = entry->key;
+
+      APPEND(key->base, key->len);
+      APPEND("=", 1);
+
+      APPEND(value->base, value->len);
+    }
+  }
+
+  b32 has_more_attr = false;
+
+  if (cookie->domain && cookie->domain->base && cookie->domain->len > 0) {
+    APPEND("Domain=", 7);
+    APPEND(cookie->domain->base, cookie->domain->len);
+    has_more_attr = true;
+  }
+
+  if (cookie->path && cookie->path->base && cookie->path->len > 0) {
+    if (has_more_attr)
+      APPEND("; ", 2);
+
+    APPEND("Path=", 5);
+    APPEND(cookie->path->base, cookie->path->len);
+    has_more_attr = true;
+  }
+
+  if (cookie->expires_str && cookie->expires_str->base &&
+      cookie->expires_str->len > 0) {
+    if (has_more_attr)
+      APPEND("; ", 2);
+
+    APPEND("Expires=", 8);
+    APPEND(cookie->expires_str->base, cookie->expires_str->len);
+    has_more_attr = true;
+  }
+
+  if (cookie->max_age > 0) {
+    if (has_more_attr)
+      APPEND("; ", 2);
+
+    cstr max_age_buf[32];
+
+    APPEND("Max-Age=", 8);
+    i64 written = snprintf(max_age_buf, 32, "%ld", cookie->max_age);
+    APPEND(max_age_buf, written);
+    has_more_attr = true;
+  }
+
+  if (cookie->same_site != INVALID) {
+    if (has_more_attr)
+      APPEND("; ", 2);
+
+    APPEND("SameSite=", 9);
+
+    switch (cookie->same_site) {
+    case NONE:
+      APPEND("None", 4);
+      break;
+    case LAX:
+      APPEND("Lax", 3);
+      break;
+    case STRICT:
+      APPEND("Strict", 6);
+      break;
+    default:
+      fprintf(stderr, "Unknown SameSite value.\n");
+      return null;
+    }
+
+    has_more_attr = true;
+  }
+
+  if (cookie->secure) {
+    if (has_more_attr)
+      APPEND("; ", 2);
+
+    APPEND("Secure", 6);
+    has_more_attr = true;
+  }
+
+  if (cookie->http_only) {
+    if (has_more_attr)
+      APPEND("; ", 2);
+
+    APPEND("HttpOnly", 8);
+    has_more_attr = true;
+  }
+
+#undef APPEND
+
+  h2o_string *str = h2o_string_new(pool, len);
+  memcpy(str->base, buf, len);
+
+  return str;
 }

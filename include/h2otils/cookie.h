@@ -7,13 +7,28 @@
 //
 //
 
-#include <h2otils/string.h>
 #include <htils/basictypes.h>
 
 //
 //
 //
 
+#include <h2otils/string.h>
+#include <h2otils/stringmap.h>
+
+//
+//
+//
+
+/**
+ * @brief SameSite argument types.
+ *
+ * @param INVALID An invalid SameSite value, for initializing only, or to mark
+ * SameSite as not being a part of the Cookie.
+ * @param NONE The None SameSite value.
+ * @param LAX The Lax SameSite value.
+ * @param STRICT The Strict SameSite value.
+ */
 typedef enum h2o_same_site_args {
   INVALID = -1,
   NONE = 0,
@@ -21,20 +36,45 @@ typedef enum h2o_same_site_args {
   STRICT = 2,
 } h2o_same_site_args_t;
 
+/**
+ * @brief Cookie structure
+ *
+ * @param names The names of each cookie field.
+ * @param values The values of each cookie field.
+ * @param domain The domain of the cookie.
+ * @param path The path of the cookie.
+ * @param expires_str The expires string of the cookie.
+ * @param same_site The SameSite value of the cookie.
+ * @param expires The expires value of the cookie.
+ * @param max_age The max-age value of the cookie.
+ * @param secure The secure value of the cookie.
+ * @param http_only The http-only value of the cookie.
+ */
 typedef struct h2o_cookie {
-  h2o_string *name;
-  h2o_string *value;
+  h2o_stringmap_t *map;
   h2o_string *domain;
   h2o_string *path;
   h2o_string *expires_str;
 
+  h2o_same_site_args_t same_site;
+
   i64 expires;
   i64 max_age;
-  h2o_same_site_args_t same_site;
   b32 secure;
   b32 http_only;
 } h2o_cookie_t;
 
+/**
+ * @brief Cookie parameter types.
+ *
+ * @param SAME_SITE The SameSite parameter.
+ * @param HTTP_ONLY The HttpOnly parameter.
+ * @param PATH The Path parameter.
+ * @param EXPIRES The Expires parameter.
+ * @param MAX_AGE The Max-Age parameter.
+ * @param DOMAIN The Domain parameter.
+ * @param SECURE The Secure parameter.
+ */
 typedef enum h2o_cookie_param {
   SAME_SITE,
   HTTP_ONLY,
@@ -45,6 +85,10 @@ typedef enum h2o_cookie_param {
   SECURE,
 } h2o_cookie_param_t;
 
+//
+//
+//
+
 /**
  * @brief Creates a new cookie with values.
  *
@@ -52,13 +96,14 @@ typedef enum h2o_cookie_param {
  * Set-Cookie syntax.
  *
  * @param pool The memory pool to allocate the cookie from.
- * @param name The name of the cookie.
- * @param value The value of the cookie.
+ * @param names The names of each cookie field.
+ * @param values The values of each cookie field.
+ * @param amount The amount of cookie keys and values within the cookie.
  *
- * @pre @c pool, @c name, and @c value must be valid and cannot be `null`.
+ * @pre @c pool, @c names, and @c values must be valid and cannot be `null`.
  */
-h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string *name,
-                             const h2o_string *value);
+h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string **names,
+                             const h2o_string **values, const u64 amount);
 
 /**
  * @brief Creates a new cookie from a string.
@@ -74,21 +119,6 @@ h2o_cookie_t *h2o_cookie_new(h2o_mem_pool_t *pool, const h2o_string *name,
  */
 h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
                                      const h2o_string *str);
-
-/**
- * @brief Converts a cookie to a h2o_string.
- *
- * @details Converts the cookie to a h2o_string, according to the Set-Cookie
- * syntax.
- *
- * @param pool The memory pool to allocate the string from.
- * @param cookie The cookie to convert.
- *
- * @pre @c pool and @c cookie must be valid and cannot be `null`.
- *
- * @return A pointer to the new h2o_string.
- */
-h2o_string *h2o_cookie_to_string(h2o_mem_pool_t *pool, h2o_cookie_t *cookie);
 
 //
 //
@@ -111,5 +141,24 @@ h2o_string *h2o_cookie_to_string(h2o_mem_pool_t *pool, h2o_cookie_t *cookie);
  */
 void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
                           h2o_cookie_param_t param, ...);
+
+//
+//
+//
+
+/**
+ * @brief Converts a cookie to a h2o_string.
+ *
+ * @details Converts the cookie to a h2o_string, according to the Set-Cookie
+ * syntax.
+ *
+ * @param pool The memory pool to allocate the string from.
+ * @param cookie The cookie to convert.
+ *
+ * @pre @c pool and @c cookie must be valid and cannot be `null`.
+ *
+ * @return A pointer to the new h2o_string.
+ */
+h2o_string *h2o_cookie_to_string(h2o_mem_pool_t *pool, h2o_cookie_t *cookie);
 
 #endif // H2OTILS_COOKIE_H

@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <stdarg.h>
 #include <string.h>
 
@@ -204,6 +205,10 @@ u64 h2o_string_concatf(h2o_mem_pool_t *pool, h2o_string *dest, const cstr *fmt,
   return len;
 }
 
+//
+//
+//
+
 b32 h2o_stringcmp(const h2o_string *first, const h2o_string *second) {
   htils_assert(first && "First string cannot be null.");
   htils_assert(second && "Second string cannot be null.");
@@ -230,6 +235,53 @@ b32 h2o_stringcmpb(const h2o_string *first, const h2o_string *second,
   htils_assert(second->base && "Second string base cannot be null.");
 
   return memcmp(first->base, second->base, len) == 0;
+}
+
+static inline void to_lower(h2o_string_slice str) {
+  for (u64 i = 0; i < str.len; i++) {
+    str.base[i] = tolower(str.base[i]);
+  }
+}
+
+b32 h2o_stringcmp_case(const h2o_string *first, const h2o_string *second) {
+  htils_assert(first && "First string cannot be null.");
+  htils_assert(second && "Second string cannot be null.");
+  htils_assert(first->len > 0 && "First string cannot be empty.");
+  htils_assert(second->len > 0 && "Second string cannot be empty.");
+  htils_assert(first->base && "First string base cannot be null.");
+  htils_assert(second->base && "Second string base cannot be null.");
+
+  if (first->len != second->len)
+    return false;
+
+  return h2o_stringcmpb_case(first, second, first->len);
+}
+
+b32 h2o_stringcmpb_case(const h2o_string *first, const h2o_string *second,
+                        const u64 len) {
+  htils_assert(first && "First string cannot be null.");
+  htils_assert(second && "Second string cannot be null.");
+  htils_assert(len > 0 && "Length must be greater than 0.");
+
+  htils_assert(first->len > 0 && "First string cannot be empty.");
+  htils_assert(first->base && "First string base cannot be null.");
+  htils_assert(second->len > 0 && "Second string cannot be empty.");
+  htils_assert(second->base && "Second string base cannot be null.");
+
+  h2o_string_slice lower_first = (h2o_string_slice){
+      .base = first->base,
+      .len = first->len,
+  };
+
+  h2o_string_slice lower_second = (h2o_string_slice){
+      .base = second->base,
+      .len = second->len,
+  };
+
+  to_lower(lower_first);
+  to_lower(lower_second);
+
+  return memcmp(lower_first.base, lower_second.base, len) == 0;
 }
 
 //

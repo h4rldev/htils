@@ -575,8 +575,10 @@ H2OTILS_TEST(h2o_string_split) {
 //
 
 H2OTILS_TEST(h2o_cookie_new) {
-  h2o_cookie_t *cookie =
-      h2o_cookie_new(pool, H2OTILS_STR("meow"), H2OTILS_STR("meow"));
+  const h2o_string *name = H2OTILS_STR("meow");
+  const h2o_string *value = H2OTILS_STR("meow2");
+
+  h2o_cookie_t *cookie = h2o_cookie_new(pool, &name, &value, 1);
 
   H2OTILS_TEST_ASSERT(cookie, "Cookie is null.");
   H2OTILS_TEST_ASSERT(cookie->domain == null, "Cookie domain is not null.");
@@ -588,51 +590,59 @@ H2OTILS_TEST(h2o_cookie_new) {
   H2OTILS_TEST_ASSERT(cookie->http_only == false,
                       "Cookie http_only is not false.");
 
-  H2OTILS_TEST_ASSERT(cookie->name, "Cookie name is null.");
-  H2OTILS_TEST_ASSERT(cookie->name->len == 4, "Cookie name length is not 4.");
-  H2OTILS_TEST_ASSERT(cookie->name->base, "Cookie name base is null.");
-  H2OTILS_TEST_ASSERT(memcmp(cookie->name->base, "meow", 4) == 0,
-                      "Cookie name is not 'meow'.");
+  H2OTILS_TEST_ASSERT(cookie->map, "Cookie names is null.");
 
-  H2OTILS_TEST_ASSERT(cookie->value, "Cookie value is null.");
-  H2OTILS_TEST_ASSERT(cookie->value->len == 4, "Cookie value length is not 4.");
-  H2OTILS_TEST_ASSERT(cookie->value->base, "Cookie value base is null.");
-  H2OTILS_TEST_ASSERT(memcmp(cookie->value->base, "meow", 4) == 0,
-                      "Cookie value is not 'meow'.");
+  h2o_string *cookie_value = h2o_sm_get(cookie->map, H2OTILS_STR("meow"));
+  H2OTILS_TEST_ASSERT(cookie_value, "Couldn't get value.");
+  H2OTILS_TEST_ASSERT(cookie_value->len == 5, "Cookie value length is not 5.");
+  H2OTILS_TEST_ASSERT(cookie_value->base, "Cookie value base is null.");
+
+  H2OTILS_TEST_ASSERT(memcmp(cookie_value->base, "meow2", 5) == 0,
+                      "Cookie value is not 'meow2'.");
 
   return H2OTILS_TEST_PASS;
 }
 
 H2OTILS_TEST(h2o_cookie_from_string) {
   h2o_string *str = h2o_string_from_cstr(
-      pool, "meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 01 Jun 2026 "
-            "09:22:50 GMT; secure; httponly");
+      pool, "meow=meow2; meowmeow=meow2; Path=/; Domain=h4rl.dev; Expires=Mon, "
+            "01 Jun 2026 09:22:50 GMT; Secure; HttpOnly");
 
   H2OTILS_TEST_ASSERT(str, "String is null.");
-  H2OTILS_TEST_ASSERT(str->len == 92, "String length is not 92.");
+  H2OTILS_TEST_ASSERT(str->len == 108, "String length is not 108.");
   H2OTILS_TEST_ASSERT(str->base, "String base is null.");
   H2OTILS_TEST_ASSERT(
       memcmp(str->base,
-             "meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 01 Jun 2026 "
-             "09:22:50 GMT; secure; httponly",
-             92) == 0,
-      "String is not 'meow=meow2; path=/; domain=h4rl.dev; expires=Mon, 01 Jun "
-      "2026 09:22:50 GMT; secure; httponly'.");
+             "meow=meow2; meowmeow=meow2; Path=/; Domain=h4rl.dev; "
+             "Expires=Mon, 01 Jun 2026 09:22:50 GMT; Secure; HttpOnly",
+             108) == 0,
+      "String is not 'meow=meow2; meowmeow=meow2; Path=/; Domain=h4rl.dev; "
+      "Expires=Mon, 01 Jun 2026 09:22:50 GMT; Secure; HttpOnly'.");
 
   h2o_cookie_t *cookie = h2o_cookie_from_string(pool, str);
   H2OTILS_TEST_ASSERT(cookie, "Cookie is null.");
+  H2OTILS_TEST_ASSERT(cookie->map, "Cookie's stringmap is null.");
+  H2OTILS_TEST_ASSERT(cookie->map->count == 2,
+                      "Cookie's stringmap count is not 2.");
 
-  H2OTILS_TEST_ASSERT(cookie->name, "Cookie name is null.");
-  H2OTILS_TEST_ASSERT(cookie->name->len == 4, "Cookie name length is not 4.");
-  H2OTILS_TEST_ASSERT(cookie->name->base, "Cookie name base is null.");
-  H2OTILS_TEST_ASSERT(memcmp(cookie->name->base, "meow", 4) == 0,
-                      "Cookie name base is not 'meow'.");
+  h2o_string *first_cookie_value = h2o_sm_get(cookie->map, H2OTILS_STR("meow"));
+  h2o_string *second_cookie_value =
+      h2o_sm_get(cookie->map, H2OTILS_STR("meowmeow"));
 
-  H2OTILS_TEST_ASSERT(cookie->value, "Cookie value is null.");
-  H2OTILS_TEST_ASSERT(cookie->value->len == 5, "Cookie value length is not 4.");
-  H2OTILS_TEST_ASSERT(cookie->value->base, "Cookie value base is null.");
-  H2OTILS_TEST_ASSERT(memcmp(cookie->value->base, "meow2", 5) == 0,
-                      "Cookie value base is not 'meow2'.");
+  H2OTILS_TEST_ASSERT(first_cookie_value, "Couldn't get first value.");
+  H2OTILS_TEST_ASSERT(first_cookie_value->len == 5,
+                      "First value's length is not 5.");
+  H2OTILS_TEST_ASSERT(first_cookie_value->base, "First value's base is null.");
+  H2OTILS_TEST_ASSERT(memcmp(first_cookie_value->base, "meow2", 5) == 0,
+                      "First value is not 'meow2'.");
+
+  H2OTILS_TEST_ASSERT(second_cookie_value, "Couldn't get second value.");
+  H2OTILS_TEST_ASSERT(second_cookie_value->len == 5,
+                      "Cookie's second value length is not 5.");
+  H2OTILS_TEST_ASSERT(second_cookie_value->base,
+                      "Cookie's second value base is null.");
+  H2OTILS_TEST_ASSERT(memcmp(second_cookie_value->base, "meow2", 5) == 0,
+                      "Cookie's second value is not 'meow2'.");
 
   H2OTILS_TEST_ASSERT(cookie->domain, "Cookie domain is null.");
   H2OTILS_TEST_ASSERT(cookie->domain->len == 8,
@@ -659,9 +669,56 @@ H2OTILS_TEST(h2o_cookie_from_string) {
   H2OTILS_TEST_ASSERT(cookie->expires_str->base,
                       "Cookie expires str base is null.");
   H2OTILS_TEST_ASSERT(
-      memcmp(cookie->expires_str->base, "mon, 01 jun 2026 09:22:50 gmt", 29) ==
+      memcmp(cookie->expires_str->base, "Mon, 01 Jun 2026 09:22:50 GMT", 29) ==
           0,
-      "Cookie expires str is not 'mon, 01 Jun 2026 09:22:50 gmt'.");
+      "Cookie expires str is not 'Mon, 01 Jun 2026 09:22:50 GMT'.");
+
+  return H2OTILS_TEST_PASS;
+}
+
+H2OTILS_TEST(h2o_cookie_add_param) {
+  const h2o_string *name = H2OTILS_STR("meow");
+  const h2o_string *value = H2OTILS_STR("meow2");
+
+  h2o_cookie_t *cookie = h2o_cookie_new(pool, &name, &value, 1);
+
+  H2OTILS_TEST_ASSERT(cookie, "Cookie is null.");
+  H2OTILS_TEST_ASSERT(cookie->domain == null, "Cookie domain is not null.");
+  H2OTILS_TEST_ASSERT(cookie->path == null, "Cookie path is not null.");
+  H2OTILS_TEST_ASSERT(cookie->max_age == -1, "Cookie max_age is not -1.");
+  H2OTILS_TEST_ASSERT(cookie->same_site == INVALID,
+                      "Cookie SameSite is not -1.");
+  H2OTILS_TEST_ASSERT(cookie->secure == false, "Cookie secure is not false.");
+  H2OTILS_TEST_ASSERT(cookie->http_only == false,
+                      "Cookie http_only is not false.");
+
+  h2o_string *cookie_value = h2o_sm_get(cookie->map, H2OTILS_STR("meow"));
+  H2OTILS_TEST_ASSERT(cookie_value, "Couldn't get value.");
+  fprintf(stderr, "Cookie value: %lu\n", cookie_value->len);
+  H2OTILS_TEST_ASSERT(cookie_value->len == 5, "Cookie value length is not 5.");
+  H2OTILS_TEST_ASSERT(cookie_value->base, "Cookie value base is null.");
+
+  H2OTILS_TEST_ASSERT(memcmp(cookie_value->base, "meow2", 5) == 0,
+                      "Cookie value is not 'meow2'.");
+
+  h2o_cookie_add_param(pool, cookie, PATH, "/");
+
+  H2OTILS_TEST_ASSERT(cookie, "Cookie is null.");
+  H2OTILS_TEST_ASSERT(cookie->domain == null, "Cookie domain is not null.");
+  H2OTILS_TEST_ASSERT(cookie->path, "Cookie path is null.");
+  H2OTILS_TEST_ASSERT(cookie->path->len == 1, "Cookie path length is not 1.");
+  H2OTILS_TEST_ASSERT(cookie->path->base, "Cookie path base is null.");
+  H2OTILS_TEST_ASSERT(memcmp(cookie->path->base, "/", 1) == 0,
+                      "Cookie path isn't '/'.");
+
+  fprintf(stderr, "Ignore the message below about Expires value being invalid, "
+                  "its intentional.\n");
+  h2o_cookie_add_param(pool, cookie, EXPIRES, "1234567890");
+
+  H2OTILS_TEST_ASSERT(cookie, "Cookie is null.");
+  H2OTILS_TEST_ASSERT(cookie->expires_str == null,
+                      "Cookie expires_str is not null.");
+  H2OTILS_TEST_ASSERT(cookie->expires == -1, "Cookie expires is not -1.");
 
   return H2OTILS_TEST_PASS;
 }
@@ -700,6 +757,7 @@ int main(void) {
 
   H2OTILS_TEST_RUN(h2o_cookie_new);
   H2OTILS_TEST_RUN(h2o_cookie_from_string);
+  H2OTILS_TEST_RUN(h2o_cookie_add_param);
 
   H2OTILS_TEST_RESULT();
 }
