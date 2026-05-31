@@ -594,6 +594,7 @@ H2OTILS_TEST(h2o_cookie_new) {
 
   h2o_string *cookie_value = h2o_sm_get(cookie->map, H2OTILS_STR("meow"));
   H2OTILS_TEST_ASSERT(cookie_value, "Couldn't get value.");
+  fprintf(stderr, "Cookie value: %lu\n", cookie_value->len);
   H2OTILS_TEST_ASSERT(cookie_value->len == 5, "Cookie value length is not 5.");
   H2OTILS_TEST_ASSERT(cookie_value->base, "Cookie value base is null.");
 
@@ -632,6 +633,7 @@ H2OTILS_TEST(h2o_cookie_from_string) {
   H2OTILS_TEST_ASSERT(first_cookie_value, "Couldn't get first value.");
   H2OTILS_TEST_ASSERT(first_cookie_value->len == 5,
                       "First value's length is not 5.");
+  fprintf(stderr, "First Cookie value: %lu\n", first_cookie_value->len);
   H2OTILS_TEST_ASSERT(first_cookie_value->base, "First value's base is null.");
   H2OTILS_TEST_ASSERT(memcmp(first_cookie_value->base, "meow2", 5) == 0,
                       "First value is not 'meow2'.");

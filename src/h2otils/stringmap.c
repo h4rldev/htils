@@ -85,22 +85,27 @@ static void sm_insert_direct(h2o_stringmap_t *map, const h2o_string *key,
  *
  * @pre @c map must be valid and cannot be `null`.
  */
+
 static void h2o_sm_grow(h2o_stringmap_t *map) {
   htils_assert(map && "stringmap cannot be null.");
-
   u64 old_capacity = map->capacity;
   h2o_stringmap_entry_t *old_entries = map->entries;
   u64 old_dead_entries = map->dead_entries;
-
   map->count = 0;
   map->capacity *= 2;
   map->entries =
       h2o_mem_alloc_pool(map->pool, h2o_stringmap_entry_t, map->capacity);
 
-  for (u64 i = 0; i < old_capacity; i++)
-    if (old_entries[i].state == OCCUPIED)
-      sm_insert_direct(map, old_entries[i].key, old_entries[i].value,
-                       old_entries[i].vsize);
+  for (u64 i = 0; i < old_capacity; i++) {
+    if (old_entries[i].state == OCCUPIED) {
+      h2o_string *new_key = h2o_string_dup(map->pool, old_entries[i].key);
+
+      void *old_value = old_entries[i].value;
+      u64 old_vsize = old_entries[i].vsize;
+
+      sm_insert_direct(map, new_key, old_value, old_vsize);
+    }
+  }
 
   map->dead_entries = old_dead_entries;
 }
