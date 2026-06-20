@@ -113,7 +113,7 @@ h2o_string *h2o_string_dup(h2o_mem_pool_t *pool, const h2o_string *str);
  *
  * @return A \ref h2o_string_slice
  */
-h2o_string_slice h2o_string_slice_from_cstr(cstr *base, u64 len);
+h2o_string_slice h2o_string_slice_from_cstr(const cstr *base, u64 len);
 
 /**
  * @brief Create a \ref h2o_string_slice from a \ref h2o_string.
@@ -127,7 +127,7 @@ h2o_string_slice h2o_string_slice_from_cstr(cstr *base, u64 len);
  *
  * @return A \ref h2o_string_slice.
  */
-h2o_string_slice h2o_string_slice_from_h2o_string(h2o_string *str);
+h2o_string_slice h2o_string_slice_from_h2o_string(const h2o_string *str);
 
 /**
  * @brief Create a \ref h2o_string_slice from a \ref string.
@@ -141,7 +141,47 @@ h2o_string_slice h2o_string_slice_from_h2o_string(h2o_string *str);
  *
  * @return A \ref h2o_string_slice.
  */
-h2o_string_slice h2o_string_slice_from_string(string *str);
+h2o_string_slice h2o_string_slice_from_string(const string *str);
+
+/**
+ * @brief Slice a part of a \ref h2o_string_slice.
+ *
+ * @details Slices a part of a \ref h2o_string_slice, by offsetting base and
+ * setting a new length.
+ *
+ * @param slice The \ref h2o_string_slice to slice.
+ * @param start The start offset to slice from.
+ * @param end The end offset to slice to.
+ *
+ * @pre
+ * - @c slice must be valid and cannot be `null`.
+ * - @c start must be less than or equal to @c end.
+ * - @c end must be less than or equal to @c slice.len.
+ *
+ * @return A \ref h2o_string_slice.
+ */
+h2o_string_slice h2o_string_slice_slice(h2o_string_slice slice, u64 start,
+                                        u64 end);
+
+/**
+ * @brief Slice a part of a \ref h2o_string_slice to be @c len.
+ *
+ * @details Slices a part of a \ref h2o_string_slice, by offsetting base so that
+ * it's + @c start and setting the length to @c len.
+ *
+ * @param slice The \ref h2o_string_slice to slice.
+ * @param start The start offset to slice from.
+ * @param len The length of the slice.
+ *
+ * @pre
+ * - @c slice must be valid and cannot be `null`.
+ * - @c start must be less than or equal to @c slice.len.
+ * - @c len must be greater than 0.
+ *
+ * @return A \ref h2o_string_slice.
+ */
+h2o_string_slice h2o_string_slice_slice_len(h2o_string_slice slice, u64 start,
+                                            u64 len);
 
 //
 //
@@ -393,6 +433,14 @@ i64 h2o_string_findc(h2o_string *haystack, char needle);
  * @return The index of the first occurance of the \ref h2o_string, or -1 if not
  */
 i64 h2o_string_find_sstr(h2o_string *haystack, h2o_string *needle);
+
+i64 h2o_string_slice_findc(h2o_string_slice haystack, char needle);
+
+i64 h2o_string_slice_find_slice(h2o_string_slice haystack,
+                                h2o_string_slice needle);
+
+i64 h2o_string_slice_findc_from(h2o_string_slice haystack, u64 start,
+                                char needle);
 
 //
 //

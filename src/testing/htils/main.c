@@ -12,6 +12,10 @@
 #include <htils/stringmap.h>
 #include <htils/test.h>
 
+#ifdef HTILS_THREAD_SAFE
+#include <htils/atomic_types.h>
+#endif
+
 #define REMOVE false
 
 HTILS_TEST(string_new) {
@@ -384,6 +388,7 @@ HTILS_TEST(string_split) {
 //
 //
 
+#ifndef HTILS_THREAD_SAFE
 HTILS_TEST(arena_free) {
   arena_t *new_arena = arena_new(MiB(1), KiB(128));
   HTILS_TEST_ASSERT(new_arena, "Failed to create new arena.");
@@ -393,10 +398,6 @@ HTILS_TEST(arena_free) {
 }
 
 HTILS_TEST(arena_alloc) {
-  string *str = string_new(arena, 4);
-  HTILS_TEST_ASSERT(str, "String is null, something went wrong.");
-  HTILS_TEST_ASSERT(str->len == 4, "String length is not 4.");
-
   u8 *new = arena_alloc(arena, u8, 4);
   HTILS_TEST_ASSERT(new, "Failed to allocate memory.");
 
@@ -462,6 +463,99 @@ HTILS_TEST(temp_arena_free) {
 
   return HTILS_TEST_PASS;
 }
+
+//
+//
+//
+
+#else
+
+HTILS_TEST(arena_free_atomic) {
+  arena_t *new_arena = arena_new(MiB(1), KiB(128));
+  HTILS_TEST_ASSERT(new_arena, "Failed to create new arena.");
+  arena_free(new_arena);
+
+  return HTILS_TEST_PASS;
+}
+
+HTILS_TEST(arena_alloc_atomic) {
+  arena_t *new_arena = arena_new(MiB(1), KiB(128));
+
+  u8 *new = arena_alloc(new_arena, u8, 4);
+  HTILS_TEST_ASSERT(new, "Failed to allocate memory.");
+
+  arena_free(new_arena);
+  return HTILS_TEST_PASS;
+}
+
+HTILS_TEST(arena_dealloc_atomic) {
+  (void)arena_alloc(arena, u8, 4);
+  atomic_u64 pos = atomic_load(&arena->pos);
+  arena_dealloc(arena, u8, 4);
+
+  HTILS_TEST_ASSERT(atomic_load(&arena->pos) == pos - (4 * sizeof(u8)),
+                    "Failed to dealloc.");
+
+  return HTILS_TEST_PASS;
+}
+
+HTILS_TEST(arena_dealloc_to_atomic) {
+  arena_t *new_arena = arena_new(MiB(1), KiB(128));
+  (void)arena_alloc(new_arena, u8, 4);
+
+  arena_dealloc_to(new_arena, 0);
+  fprintf(stderr, "arena->pos: %lu\n", atomic_load(&arena->pos));
+  fprintf(stderr, "size of arena: %lu\n", sizeof(arena_t));
+  HTILS_TEST_ASSERT(atomic_load(&arena->pos) == (sizeof(arena_t)),
+                    "Failed to dealloc to 0.");
+
+  arena_free(new_arena);
+  return HTILS_TEST_PASS;
+}
+
+HTILS_TEST(arena_clear_atomic) {
+  arena_t *new_arena = arena_new(MiB(1), KiB(128));
+  (void)arena_alloc(new_arena, u8, 4);
+
+  arena_clear(new_arena);
+  HTILS_TEST_ASSERT(atomic_load(&arena->pos) == (sizeof(arena_t)),
+                    "Failed to clear to base.");
+
+  arena_free(new_arena);
+  return HTILS_TEST_PASS;
+}
+
+//
+//
+//
+
+HTILS_TEST(temp_arena_new_atomic) {
+  temp_arena_t temp = temp_arena_new(arena);
+  atomic_u64 pos = atomic_load(&arena->pos);
+
+  HTILS_TEST_ASSERT(temp.arena == arena, "Arena is not the same.");
+  HTILS_TEST_ASSERT(temp.start_pos == pos, "Start pos is not the same.");
+
+  return HTILS_TEST_PASS;
+}
+
+HTILS_TEST(temp_arena_free_atomic) {
+  temp_arena_t temp = temp_arena_new(arena);
+  atomic_u64 pos = atomic_load(&arena->pos);
+
+  HTILS_TEST_ASSERT(temp.arena == arena, "Arena is not the same.");
+  HTILS_TEST_ASSERT(temp.start_pos == pos, "Start pos is not the same.");
+
+  (void)arena_alloc(arena, u8, 4);
+
+  temp_arena_free(temp);
+  HTILS_TEST_ASSERT(atomic_load(&arena->pos) == pos,
+                    "Failed to free temp arena.");
+
+  return HTILS_TEST_PASS;
+}
+
+#endif
 
 //
 //
@@ -1097,6 +1191,8 @@ int main(int argc, cstr **argv) {
 
   HTILS_TEST_RUN(string_split);
 
+#ifndef HTILS_THREAD_SAFE
+
   HTILS_TEST_RUN(arena_free);
   HTILS_TEST_RUN(arena_alloc);
   HTILS_TEST_RUN(arena_dealloc);
@@ -1105,6 +1201,19 @@ int main(int argc, cstr **argv) {
 
   HTILS_TEST_RUN(temp_arena_new);
   HTILS_TEST_RUN(temp_arena_free);
+
+#else
+
+  HTILS_TEST_RUN(arena_free_atomic);
+  HTILS_TEST_RUN(arena_alloc_atomic);
+  HTILS_TEST_RUN(arena_dealloc_atomic);
+  HTILS_TEST_RUN(arena_dealloc_to_atomic);
+  HTILS_TEST_RUN(arena_clear_atomic);
+
+  HTILS_TEST_RUN(temp_arena_new_atomic);
+  HTILS_TEST_RUN(temp_arena_free_atomic);
+
+#endif
 
   HTILS_TEST_RUN(stringmap_new);
   HTILS_TEST_RUN(stringmap_insert);

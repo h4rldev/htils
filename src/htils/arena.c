@@ -1,5 +1,3 @@
-#define __STDC_WANT_LIB_EXT1__ 1
-
 #include <stddef.h>
 #include <string.h>
 
@@ -10,6 +8,13 @@
 #include <htils/arena.h>
 #include <htils/assert.h>
 #include <htils/basictypes.h>
+
+#ifdef HTILS_THREAD_SAFE
+#include <stdatomic.h>
+#include <threads.h>
+
+#include <htils/atomic_types.h>
+#endif
 
 //
 //
@@ -29,9 +34,6 @@
  */
 #define ALIGN_POW2(num, pow)                                                   \
   (((u64)(num) + ((u64)(pow) - 1)) & (~((u64)(pow) - 1)))
-
-/** The base position of an arena. */
-#define ARENA_BASE_POS (sizeof(arena_t))
 
 /** The alignment of an arena, which is the alignment of max_align_t. */
 #define ARENA_ALIGNMENT (_Alignof(max_align_t))
@@ -266,6 +268,12 @@ static __attribute__((unused)) b32 mem_decommit(void *ptr, u64 size) {
 //
 //
 //
+
+#ifndef HTILS_THREAD_SAFE
+
+/** The base position of an arena. */
+#define ARENA_BASE_POS (sizeof(arena_t))
+
 arena_t *arena_new(u64 reserve_size, u64 commit_size) {
   u32 page_size = get_page_size();
 
@@ -290,8 +298,8 @@ arena_t *arena_new(u64 reserve_size, u64 commit_size) {
 }
 
 void arena_free(arena_t *arena) {
-  htils_assert(arena != NULL && "Arena cannot be null.");
-  htils_assert(mem_release(arena, arena->reserved) &&
+  htils_assert(arena && "Arena cannot be null.");
+  htils_assert(mem_release(arena, arena->reserved + ARENA_BASE_POS) &&
                "Failed to release arena.");
 }
 
@@ -331,39 +339,6 @@ void *__arena_alloc(struct arena *arena, u64 size) {
   return (void *)out;
 }
 
-void *__arena_alloc_zeroed(struct arena *arena, u64 size) {
-  htils_assert(arena != null && "Arena cannot be null.");
-  htils_assert(size > 0 && "Size must be greater than 0.");
-
-  u64 pos_aligned = ALIGN_POW2(arena->pos, ARENA_ALIGNMENT);
-  u64 new_pos = pos_aligned + size;
-
-  htils_assert(new_pos < arena->reserved && "Arena is full.");
-
-  if (new_pos > arena->commit_pos) {
-    u64 chunk_size = arena->committed;
-    u64 chunks_needed =
-        (new_pos - arena->committed + chunk_size - 1) / chunk_size;
-    u64 new_commit_pos = arena->commit_pos + chunks_needed * chunk_size;
-    new_commit_pos =
-        new_commit_pos > arena->reserved ? arena->reserved : new_commit_pos;
-
-    u8 *mem = (u8 *)arena + arena->commit_pos;
-    u64 commit_size = new_commit_pos - arena->commit_pos;
-
-    htils_assert(mem_commit(mem, commit_size) &&
-                 "Failed to commit new memory.");
-
-    arena->commit_pos = new_commit_pos;
-  }
-
-  arena->pos = new_pos;
-  u8 *out = (u8 *)arena + pos_aligned;
-  memset(out, 0, size);
-
-  return (void *)out;
-}
-
 void __arena_dealloc(struct arena *arena, u64 size) {
   htils_assert(arena != null && "Arena cannot be null.");
 
@@ -376,15 +351,10 @@ void __arena_dealloc(struct arena *arena, u64 size) {
 //
 
 void arena_dealloc_to(arena_t *arena, u64 pos) {
-  htils_assert(arena != null && "Arena cannot be null.");
+  htils_assert(arena && "Arena cannot be null.");
 
   u64 size = pos < arena->pos ? arena->pos - pos : ARENA_BASE_POS;
   __arena_dealloc(arena, size);
-}
-
-void arena_clear(arena_t *arena) {
-  htils_assert(arena != null && "Arena cannot be null.");
-  arena_dealloc_to(arena, ARENA_BASE_POS);
 }
 
 //
@@ -399,6 +369,129 @@ temp_arena_t temp_arena_new(arena_t *arena) {
 void temp_arena_free(temp_arena_t temp) {
   htils_assert(temp.arena != null && "Arena cannot be null.");
   arena_dealloc_to(temp.arena, temp.start_pos);
+}
+
+#else
+
+/** The base position of an arena. */
+#define ARENA_BASE_POS (sizeof(arena_t))
+
+arena_t *arena_new(u64 reserve_size, u64 commit_size) {
+  u32 page_size = get_page_size();
+
+  htils_assert(page_size > 0 && "Failed to get page size.");
+  htils_assert(reserve_size > 0 && "Reserve size must be greater than 0.");
+  htils_assert(commit_size > 0 && "Commit size must be greater than 0.");
+  htils_assert(reserve_size > commit_size &&
+               "Commit size cannot be greater than reserve size.");
+
+  reserve_size = ALIGN_POW2(reserve_size, page_size);
+  commit_size = ALIGN_POW2(commit_size, page_size);
+
+  struct arena *arena = mem_reserve(ARENA_BASE_POS + reserve_size);
+  htils_assert(mem_commit(arena, commit_size) && "Failed to commit memory.");
+
+  arena->reserved = reserve_size;
+  arena->committed = commit_size;
+  atomic_store(&arena->pos, ARENA_BASE_POS);
+  arena->commit_pos = commit_size;
+  mtx_init(&arena->commit_mtx, mtx_plain);
+
+  return arena;
+}
+
+void arena_free(arena_t *arena) {
+  htils_assert(arena && "Atomic arena cannot be null.");
+  mtx_destroy(&arena->commit_mtx);
+  htils_assert(mem_release(arena, arena->reserved + ARENA_BASE_POS) &&
+               "Failed to release arena.");
+}
+
+void *__arena_alloc(struct arena *arena, u64 size) {
+  htils_assert(arena && "Atomic arena cannot be null.");
+  htils_assert(size > 0 && "Size must be greater than 0.");
+
+  u64 old_pos, new_pos;
+  do {
+    old_pos = atomic_load(&arena->pos);
+    u64 aligned = ALIGN_POW2(old_pos, ARENA_ALIGNMENT);
+    new_pos = aligned + size;
+    htils_assert(new_pos <= arena->reserved + ARENA_BASE_POS &&
+                 "Arena is full.");
+  } while (!atomic_compare_exchange_weak(&arena->pos, &old_pos, new_pos));
+
+  if (new_pos > arena->commit_pos) {
+    mtx_lock(&arena->commit_mtx);
+    if (new_pos > arena->commit_pos) {
+      u64 chunk_size = arena->committed;
+      u64 chunks_needed =
+          (new_pos - arena->committed + chunk_size - 1) / chunk_size;
+      u64 new_commit_pos = arena->commit_pos + chunks_needed * chunk_size;
+      if (new_commit_pos > arena->reserved + ARENA_BASE_POS)
+        new_commit_pos = arena->reserved + ARENA_BASE_POS;
+
+      u8 *mem = (u8 *)arena + arena->commit_pos;
+      u64 commit_size = new_commit_pos - arena->commit_pos;
+
+      htils_assert(mem_commit(mem, commit_size) &&
+                   "Failed to commit new memory.");
+
+      arena->commit_pos = new_commit_pos;
+    }
+    mtx_unlock(&arena->commit_mtx);
+  }
+
+  arena->pos = new_pos;
+  u8 *out = (u8 *)arena + ALIGN_POW2(old_pos, ARENA_ALIGNMENT);
+
+  return (void *)out;
+}
+
+void __arena_dealloc(arena_t *arena, u64 size) {
+  htils_assert(arena && "Atomic arena cannot be null.");
+  u64 current_pos = atomic_load(&arena->pos);
+  size = (size < current_pos - ARENA_BASE_POS) ? size
+                                               : current_pos - ARENA_BASE_POS;
+  atomic_store(&arena->pos, current_pos - size);
+}
+
+void arena_dealloc_to(arena_t *arena, u64 pos) {
+  htils_assert(arena && "Atomic arena cannot be null.");
+  u64 current_pos = atomic_load(&arena->pos);
+  u64 size = (pos < current_pos) ? current_pos - pos : ARENA_BASE_POS;
+  __arena_dealloc(arena, size);
+}
+
+temp_arena_t temp_arena_new(arena_t *arena) {
+  htils_assert(arena && "Atomic arena cannot be null.");
+  return (temp_arena_t){.arena = arena, .start_pos = atomic_load(&arena->pos)};
+}
+
+void temp_arena_free(temp_arena_t temp) {
+#ifndef HTILS_THREAD_SAFE
+  htils_assert(temp.arena != null && "Arena cannot be null.");
+#else
+  htils_assert(temp.arena && "Atomic arena cannot be null.");
+#endif
+  arena_dealloc_to(temp.arena, temp.start_pos);
+}
+
+#endif
+
+void *__arena_alloc_zeroed(struct arena *arena, u64 size) {
+  void *ptr = __arena_alloc(arena, size);
+  if (ptr)
+    memset(ptr, 0, size);
+  return ptr;
+}
+
+void arena_clear(arena_t *arena) {
+#ifndef HTILS_THREAD_SAFE
+  htils_assert(arena && "Arena cannot be null.");
+#else
+  htils_assert(arena && "Atomic arena cannot be null.");
+#endif
+  arena_dealloc_to(arena, ARENA_BASE_POS);
 }
 
 /// :3

@@ -493,6 +493,26 @@ void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
   }
 }
 
+void h2o_cookie_append(h2o_cookie_t *cookie, const h2o_string *key,
+                       const h2o_string *value) {
+  htils_assert(cookie && "Cookie is null.");
+  htils_assert(key && "Key is null.");
+  htils_assert(key->len > 0 && "Key size is zero.");
+  htils_assert(key->base && "Key base is null.");
+
+  htils_assert(value && "Value is null.");
+  htils_assert(value->len > 0 && "Value size is zero.");
+  htils_assert(value->base && "Value base is null.");
+  htils_assert(cookie->map && "Cookie's stringmap is null.");
+
+  h2o_stringmap_result_t res = h2o_sm_insert(cookie->map, key, value);
+  if (res == CREATED || res == UPDATED)
+    return;
+
+  fprintf(stderr, "Failed to append key and value to cookie.\n");
+  return;
+}
+
 //
 //
 //
@@ -626,4 +646,19 @@ h2o_string *h2o_cookie_to_string(h2o_mem_pool_t *pool, h2o_cookie_t *cookie) {
   memcpy(str->base, buf, len);
 
   return str;
+}
+
+h2o_string *h2o_cookie_get_value(h2o_cookie_t *cookie, const h2o_string *key) {
+  htils_assert(cookie && "Cookie is null.");
+  htils_assert(key && "Key is null.");
+  htils_assert(key->len > 0 && "Key size is zero.");
+  htils_assert(key->base && "Key base is null.");
+  htils_assert(cookie->map && "Cookie's stringmap is null.");
+
+  if (cookie->map->count == 0) {
+    fprintf(stderr, "Cookie has no values.\n");
+    return null;
+  }
+
+  return (h2o_string *)h2o_sm_get(cookie->map, key);
 }

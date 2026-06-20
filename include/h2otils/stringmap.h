@@ -12,7 +12,7 @@
 //
 
 /**
- * @brief The state of a h2o_stringmap entry.
+ * @brief The state of a \ref h2o_stringmap_t entry.
  *
  * @param EMPTY The entry is empty.
  * @param OCCUPIED The entry is occupied.
@@ -26,7 +26,7 @@ typedef enum h2o_stringmap_entry_state {
 
 /**
  *
- * @brief The result of a stringmap operation.
+ * @brief The result of a \ref h2o_stringmap_t operation.
  *
  * @param CREATED The entry was created.
  * @param UPDATED The entry was updated.
@@ -43,7 +43,7 @@ typedef enum h2o_stringmap_result {
 } h2o_stringmap_result_t;
 
 /**
- * @brief A h2o_stringmap entry.
+ * @brief A \ref h2o_stringmap_t entry.
  *
  * @param key The key of the entry.
  * @param value The value of the entry.
@@ -57,7 +57,7 @@ typedef struct h2o_stringmap_entry {
 } h2o_stringmap_entry_t;
 
 /**
- * @brief A h2o_stringmap_t.
+ * @brief A stringmap.
  *
  * @param pool The memory pool to allocate from.
  * @param entries The entries of the \ref h2o_stringmap_t.

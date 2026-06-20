@@ -177,7 +177,7 @@
         buildPhase = ''
           runHook preBuild
           sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
-          just htils-release static
+          just htils-release-static
 
           doxygen
           runHook postBuild
@@ -223,6 +223,105 @@
           mkdir -p $doc/share/doc/htils
 
           cp lib/libhtils-debug.a $out/lib
+          cp include/htils.h $out/include
+          cp include/htils/* $out/include/htils/
+          cp -r doc/html/* $doc/share/doc/htils/
+
+          runHook postInstall
+        '';
+      };
+
+      packages.htils-threadsafe = pkgs.stdenv.mkDerivation {
+        pname = "htils-threadsafe";
+        version = "0.1.0";
+
+        src = ./.;
+
+        nativeBuildInputs = with pkgs; [just gcc mold doxygen];
+
+        outputs = ["out" "doc"];
+
+        buildPhase = ''
+          runHook preBuild
+          sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
+          just htils-release-threadsafe
+          doxygen
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out/lib
+          mkdir -p $out/include/htils/
+          mkdir -p $doc/share/doc/htils/
+
+          cp lib/libhtils.so $out/lib
+          cp include/htils.h $out/include
+          cp include/htils/* $out/include/htils/
+          cp -r doc/html/* $doc/share/doc/htils/
+
+          runHook postInstall
+        '';
+      };
+
+      packages.htils-debug-threadsafe = pkgs.stdenv.mkDerivation {
+        pname = "htils-debug-threadsafe";
+        version = "0.1.0";
+
+        src = ./.;
+
+        nativeBuildInputs = with pkgs; [just gcc mold doxygen];
+
+        outputs = ["out" "doc"];
+
+        buildPhase = ''
+          runHook preBuild
+          sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
+          just htils-debug-threadsafe
+          doxygen
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out/lib
+          mkdir -p $out/include/htils/
+          mkdir -p $doc/share/doc/htils/
+
+          cp lib/libhtils-debug.a $out/lib
+          cp include/htils.h $out/include
+          cp include/htils/* $out/include/htils/
+          cp -r doc/html/* $doc/share/doc/htils/
+
+          runHook postInstall
+        '';
+      };
+
+      packages.htils-threadsafe-static = pkgs.stdenv.mkDerivation {
+        pname = "htils-threadsafe-static";
+        version = "0.1.0";
+
+        src = ./.;
+
+        nativeBuildInputs = with pkgs; [just gcc mold doxygen];
+
+        outputs = ["out" "doc"];
+
+        buildPhase = ''
+          runHook preBuild
+          sed -i 's|#!/usr/bin/env bash|#!${pkgs.bash}/bin/bash|' justfile
+          just htils-release-threadsafe-static
+          doxygen
+          runHook postBuild
+        '';
+
+        installPhase = ''
+          runHook preInstall
+          mkdir -p $out/lib
+          mkdir -p $out/include/htils/
+          mkdir -p $doc/share/doc/htils/
+
+          cp lib/libhtils.a $out/lib
           cp include/htils.h $out/include
           cp include/htils/* $out/include/htils/
           cp -r doc/html/* $doc/share/doc/htils/

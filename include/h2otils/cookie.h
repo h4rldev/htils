@@ -142,6 +142,21 @@ h2o_cookie_t *h2o_cookie_from_string(h2o_mem_pool_t *pool,
 void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
                           h2o_cookie_param_t param, ...);
 
+/**
+ * @brief Appends a key-value pair to the cookie.
+ *
+ * @details Appends a key-value pair to the cookie, if the key already exists,
+ * its updated, otherwise it will be created.
+ *
+ * @param cookie The cookie to append to.
+ * @param key The key to append.
+ * @param value The value to append.
+ *
+ * @pre @c cookie, @c key, and @c value must be valid and cannot be `null`.
+ */
+void h2o_cookie_append(h2o_cookie_t *cookie, const h2o_string *key,
+                       const h2o_string *value);
+
 //
 //
 //
@@ -160,5 +175,20 @@ void h2o_cookie_add_param(h2o_mem_pool_t *pool, h2o_cookie_t *cookie,
  * @return A pointer to the new h2o_string.
  */
 h2o_string *h2o_cookie_to_string(h2o_mem_pool_t *pool, h2o_cookie_t *cookie);
+
+/**
+ * @brief Gets a value from the cookie.
+ *
+ * @details Gets a value from the cookie, if the key doesn't exist, it will
+ * return null.
+ *
+ * @param cookie The cookie to get the value from.
+ * @param key The key to get the value from.
+ *
+ * @pre @c cookie and @c key must be valid and cannot be `null`.
+ *
+ * @return A pointer to the value, or null if it doesn't exist.
+ */
+h2o_string *h2o_cookie_get_value(h2o_cookie_t *cookie, const h2o_string *key);
 
 #endif // H2OTILS_COOKIE_H

@@ -88,8 +88,8 @@ static void sm_insert_direct(h2o_stringmap_t *map, const h2o_string *key,
 /**
  * @brief Grow a stringmap if it's too small.
  *
- * @details By doubling the capacity, allocating a new block using \ref
- * arena_alloc(), and copying over all occupied entries.
+ * @details By doubling the capacity, allocating a new block using
+ * h2o_mem_alloc_pool(), and copying over all occupied entries.
  *
  * @param map The stringmap to grow.
  *

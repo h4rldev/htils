@@ -70,22 +70,14 @@ h2o_string *h2o_string_from_string(h2o_mem_pool_t *pool, const string *str) {
 //
 //
 
-h2o_string_slice h2o_string_slice_from_cstr(cstr *base, u64 len) {
+h2o_string_slice h2o_string_slice_from_cstr(const cstr *base, u64 len) {
   htils_assert(base && "Base cannot be null.");
   htils_assert(len > 0 && "Length must be greater than 0.");
 
-  return (h2o_string_slice){.base = base, .len = len};
+  return (h2o_string_slice){.base = (cstr *)base, .len = len};
 }
 
-h2o_string_slice h2o_string_slice_from_h2o_string(h2o_string *str) {
-  htils_assert(str != null && "String cannot be null.");
-  htils_assert(str->base && "Base cannot be null.");
-  htils_assert(str->len > 0 && "Length must be greater than 0.");
-
-  return (h2o_string_slice){.base = str->base, .len = str->len};
-}
-
-h2o_string_slice h2o_string_slice_from_string(string *str) {
+h2o_string_slice h2o_string_slice_from_h2o_string(const h2o_string *str) {
   htils_assert(str != null && "String cannot be null.");
   htils_assert(str->base && "Base cannot be null.");
   htils_assert(str->len > 0 && "Length must be greater than 0.");
@@ -93,6 +85,37 @@ h2o_string_slice h2o_string_slice_from_string(string *str) {
   return (h2o_string_slice){.base = (cstr *)str->base, .len = str->len};
 }
 
+h2o_string_slice h2o_string_slice_from_string(const string *str) {
+  htils_assert(str != null && "String cannot be null.");
+  htils_assert(str->base && "Base cannot be null.");
+  htils_assert(str->len > 0 && "Length must be greater than 0.");
+
+  return (h2o_string_slice){.base = (cstr *)str->base, .len = str->len};
+}
+
+h2o_string_slice h2o_string_slice_slice(h2o_string_slice slice, u64 start,
+                                        u64 end) {
+  htils_assert(slice.base && "Base cannot be null.");
+  htils_assert(slice.len > 0 && "Length must be greater than 0.");
+
+  htils_assert(start <= end && "Start must be less than or equal to end.");
+  htils_assert(end <= slice.len &&
+               "End must be less than or equal to slice length.");
+
+  u64 slice_len = end - start;
+  return (h2o_string_slice){.base = slice.base + start, .len = slice_len};
+}
+
+h2o_string_slice h2o_string_slice_slice_len(h2o_string_slice slice, u64 start,
+                                            u64 len) {
+  htils_assert(slice.base && "Base cannot be null.");
+  htils_assert(slice.len > 0 && "Length must be greater than 0.");
+
+  htils_assert(start + len <= slice.len &&
+               "Start + len must be less than or equal to slice length.");
+
+  return (h2o_string_slice){.base = slice.base + start, .len = len};
+}
 //
 //
 //
@@ -388,4 +411,41 @@ i64 h2o_string_find_sstr(h2o_string *haystack, h2o_string *needle) {
       return (i64)(p - haystack->base);
 
   return -1;
+}
+
+i64 h2o_string_slice_findc(h2o_string_slice haystack, char needle) {
+  htils_assert(haystack.base && "Base cannot be null.");
+  htils_assert(haystack.len > 0 && "Length must be greater than 0.");
+  htils_assert(needle > 0 && "Needle must be greater than 0.");
+
+  cstr *found = (cstr *)memchr(haystack.base, needle, haystack.len);
+  return found ? (i64)(found - haystack.base) : -1;
+}
+
+i64 h2o_string_slice_find_slice(h2o_string_slice haystack,
+                                h2o_string_slice needle) {
+  htils_assert(haystack.base && "Base cannot be null.");
+  htils_assert(haystack.len > 0 && "Length must be greater than 0.");
+  htils_assert(needle.base && "Needle base cannot be null.");
+  htils_assert(needle.len > 0 && "Needle length must be greater than 0.");
+
+  for (cstr *p = haystack.base; p <= haystack.base + haystack.len - needle.len;
+       p++)
+    if (memcmp(needle.base, p, needle.len) == 0)
+      return (i64)(p - haystack.base);
+
+  return -1;
+}
+
+i64 h2o_string_slice_findc_from(h2o_string_slice haystack, u64 start,
+                                char needle) {
+  htils_assert(haystack.base && "Base cannot be null.");
+  htils_assert(haystack.len > 0 && "Length must be greater than 0.");
+  htils_assert(start <= haystack.len &&
+               "Start must be less than or equal to length.");
+  htils_assert(needle > 0 && "Needle must be greater than 0.");
+
+  cstr *found =
+      (cstr *)memchr(haystack.base + start, needle, haystack.len - start);
+  return found ? (i64)(found - haystack.base) : -1;
 }

@@ -58,13 +58,26 @@ h2otils_release_static_link_flags := h2otils_release_link_flags + ' -static -fPI
 default:
     just --list
 
-compile-htils type="debug" force="false" threads=num_cpus():
+compile-htils type="debug" force="false" thread_safe="true" threads=num_cpus():
     #!/usr/bin/env bash
     shopt -s globstar
+    set -x
 
     [[ -d {{ htils_out }} ]] || mkdir -p {{ htils_out }}
 
     WILL_COMPILE=false
+    ADD_THREADSAFE=""
+    CURRENT_TARGET_FLAGS=""
+
+    if [[ {{ thread_safe }} == "true" ]]; then
+      ADD_THREADSAFE="-DHTILS_THREAD_SAFE"
+    fi
+
+    if [[ {{ type }} == "debug" ]]; then
+      CURRENT_TARGET_FLAGS="{{ debug_compile_flags }}"
+    else
+      CURRENT_TARGET_FLAGS="{{ release_compile_flags }}"
+    fi
 
     for file in {{ htils_src }}/**/*.c; do
         if [[ $file -nt  {{ htils_out }}/$(basename "${file%.c}")-{{ type }}.o ]]; then
@@ -86,16 +99,25 @@ compile-htils type="debug" force="false" threads=num_cpus():
         exit 0
     fi
 
+    export ADD_THREADSAFE
+    export CURRENT_TARGET_FLAGS
+
+    compile() {
+      set -x
+      local current_out_file
+      current_out_file="{{ htils_out }}/$(basename "${1%.c}")-{{ type }}.o"
+
+      if [[ "$1" -nt "$current_out_file" || ! -f "$current_out_file" || {{ force }} == "true" || {{ force }} == "force" ]]; then
+        echo -e "Compiling {{ green }}$1{{ reset }}..."
+        gcc {{ include_flags }} ${CURRENT_TARGET_FLAGS} ${ADD_THREADSAFE} -c "$1" -o "${current_out_file}"
+      fi
+    }
+
+    export -f compile
 
     echo -e "Using {{ red }}{{ threads }}{{ reset }} threads"
     echo -e "Target: {{ green }}{{ type }}{{ reset }}"
-    if [[ {{ type }} == "debug" ]]; then
-        find {{ htils_src }} -name "*.c" -print0 | xargs -0 -P{{ threads }} -n1 \
-            sh -c 'if [[ "$1" -nt "{{ htils_out }}/$(basename "${1%.c}")-debug.o" || {{ force }} == "true" || {{ force }} == "force" ]]; then echo -e "Compiling {{ green }}$1{{ reset }}..."; gcc {{ include_flags }} {{ debug_compile_flags }} -c "$1" -o "{{ htils_out }}/$(basename "${1%.c}")-debug.o"; fi' sh
-    else
-        find {{ htils_src }} -name "*.c" -print0 | xargs -0 -P{{ threads }} -n1 \
-            sh -c 'if [[ "$1" -nt "{{ htils_out }}/$(basename "${1%.c}")-release.o" || {{ force }} == "true" || {{ force }} == "force" ]]; then echo -e "Compiling {{ green }}$1{{ reset }}..."; gcc {{ include_flags }} {{ release_compile_flags }} -c "$1" -o "{{ htils_out }}/$(basename "${1%.c}")-release.o"; fi' sh
-    fi
+    find {{ htils_src }} -name "*.c" -print0 | xargs -0 -P{{ threads }} -n1 bash -c 'compile "$0"'
 
     echo -e "Compile (htils): Compiling {{ green }}{{ type }}{{ reset }} complete"
 
@@ -248,13 +270,26 @@ assemble-h2otils type="debug" force="false" static="dynamic":
 
     echo -e "Assemble (h2otils): Assemble {{ green }}{{ type }}{{ reset }} complete"
 
-compile-htils-test type="debug" force="false" threads=num_cpus():
+compile-htils-test type="debug" force="false" thread_safe="true" threads=num_cpus():
     #!/usr/bin/env bash
     shopt -s globstar
+    set -x
 
     [[ -d {{ htils_test_out }} ]] || mkdir -p {{ htils_test_out }}
 
     WILL_COMPILE=false
+    ADD_THREADSAFE=""
+    CURRENT_TARGET_FLAGS=""
+
+    if [[ {{ thread_safe }} == "true" ]]; then
+      ADD_THREADSAFE="-DHTILS_THREAD_SAFE"
+    fi
+
+    if [[ {{ type }} == "debug" ]]; then
+      CURRENT_TARGET_FLAGS="{{ debug_compile_flags }}"
+    else
+      CURRENT_TARGET_FLAGS="{{ release_compile_flags }}"
+    fi
 
     for file in {{ htils_test_src }}/**/*.c; do
         if [[ $file -nt  {{ htils_test_out }}/$(basename "${file%.c}")-{{ type }}.o ]]; then
@@ -276,16 +311,24 @@ compile-htils-test type="debug" force="false" threads=num_cpus():
         exit 0
     fi
 
+    export ADD_THREADSAFE
+    export CURRENT_TARGET_FLAGS
+
+    compile() {
+      set -x
+      local current_out_file
+      current_out_file="{{ htils_test_out }}/$(basename "${1%.c}")-{{ type }}.o"
+      if [[ "$1" -nt "$current_out_file" || ! -f "$current_out_file" || {{ force }} == "true" || {{ force }} == "force" ]]; then
+        echo -e "Compiling {{ green }}$1{{ reset }}..."
+        gcc {{ include_flags }} ${CURRENT_TARGET_FLAGS} ${ADD_THREADSAFE} -c "$1" -o "$current_out_file"
+      fi
+    }
+
+    export -f compile
 
     echo -e "Using {{ red }}{{ threads }}{{ reset }} threads"
     echo -e "Target: {{ green }}{{ type }}{{ reset }}"
-    if [[ {{ type }} == "debug" ]]; then
-        find {{ htils_test_src }} -name "*.c" -print0 | xargs -0 -P{{ threads }} -n1 \
-            sh -c 'if [[ "$1" -nt "{{ htils_test_out }}/$(basename "${1%.c}")-debug.o" || {{ force }} == "true" || {{ force }} == "force" ]]; then echo -e "Compiling {{ green }}$1{{ reset }}..."; gcc {{ include_flags }} {{ debug_compile_flags }} -c "$1" -o "{{ htils_test_out }}/$(basename "${1%.c}")-debug.o"; fi' sh
-    else
-        find {{ htils_test_src }} -name "*.c" -print0 | xargs -0 -P{{ threads }} -n1 \
-            sh -c 'if [[ "$1" -nt "{{ htils_test_out }}/$(basename "${1%.c}")-release.o" || {{ force }} == "true" || {{ force }} == "force" ]]; then echo -e "Compiling {{ green }}$1{{ reset }}..."; gcc {{ include_flags }} {{ release_compile_flags }} -c "$1" -o "{{ htils_test_out }}/$(basename "${1%.c}")-release.o"; fi' sh
-    fi
+    find {{ htils_test_src }} -name "*.c" -print0 | xargs -0 -P{{ threads }} -n1 bash -c 'compile "$0"'
 
     echo -e "Compile (htils-test): Compiling {{ green }}{{ type }}{{ reset }} complete"
 
@@ -507,17 +550,17 @@ link-h2otils-test type="debug" static="dynamic":
         echo -e "Link (h2otils-test): Linking {{ green }}{{ type }}{{ reset }} statically complete"
     fi
 
-build-htils type="debug" force="false" static="dynamic" threads=num_cpus():
-    just compile-htils {{ type }} {{ force }} {{ threads }}
+build-htils type="debug" force="false" thread_safe="true" static="dynamic" threads=num_cpus():
+    just compile-htils {{ type }} {{ force }} {{ thread_safe }} {{ threads }}
     just assemble-htils {{ type }} {{ force }} {{ static }}
 
 build-h2otils type="debug" force="false" static="dynamic" threads=num_cpus():
     just compile-h2otils {{ type }} {{ force }} {{ threads }}
     just assemble-h2otils {{ type }} {{ force }} {{ static }}
 
-build-htils-test type="debug" force="false" static="dynamic" threads=num_cpus():
-    just build-htils {{ type }} {{ force }} {{ static }}
-    just compile-htils-test {{ type }} {{ force }} {{ threads }}
+build-htils-test type="debug" force="false" thread_safe="true" static="dynamic" threads=num_cpus():
+    just build-htils {{ type }} {{ force }} {{ thread_safe }} {{ static }}
+    just compile-htils-test {{ type }} {{ force }} {{ thread_safe }} {{ threads }}
     just link-htils-test {{ type }} {{ static }}
 
 build-h2otils-test type="debug" force="false" static="dynamic" threads=num_cpus():
@@ -525,38 +568,47 @@ build-h2otils-test type="debug" force="false" static="dynamic" threads=num_cpus(
     just compile-h2otils-test {{ type }} {{ force }} {{ threads }}
     just link-h2otils-test {{ type }} {{ static }}
 
-build-htils-test-static force="false" threads=num_cpus():
-    just build-htils-test release {{ force }} static {{ threads }}
+build-htils-test-static force="false" thread_safe="true" threads=num_cpus():
+    just build-htils-test release {{ force }} {{ thread_safe }} static {{ threads }}
 
 build-h2otils-test-static force="false" threads=num_cpus():
     just build-h2otils-test release {{ force }} static {{ threads }}
 
-htils-debug static="dynamic" force="false" threads=num_cpus():
-    just build-htils debug {{ force }} {{ static }} {{ threads }}
+htils-debug static="dynamic" force="false" thread_safe="false" threads=num_cpus():
+    just build-htils debug {{ force }} {{ thread_safe }}  {{ static }} {{ threads }}
 
 h2otils-debug static="dynamic" force="false" threads=num_cpus():
     just build-h2otils debug {{ force }} {{ static }} {{ threads }}
 
-htils-release static="dynamic" force="false" threads=num_cpus():
-    just build-htils release {{ force }} {{ static }}  {{ threads }}
+htils-release static="dynamic" force="false" thread_safe="false" threads=num_cpus():
+    just build-htils release {{ force }} {{ thread_safe }} {{ static }}  {{ threads }}
+
+htils-debug-threadsafe static="dynamic" force="false" threads=num_cpus():
+    just htils-debug {{ static }} {{ force }} true {{ threads }}
+
+htils-release-threadsafe static="dynamic" force="false" threads=num_cpus():
+    just htils-release {{ static }} {{ force }} true {{ threads }}
 
 h2otils-release static="dynamic" force="false" threads=num_cpus():
     just build-h2otils release {{ force }} {{ static }}  {{ threads }}
 
-htils-release-static force="false" threads=num_cpus():
-    just build-htils-static {{ force }} {{ threads }}
+htils-release-static force="false" thread_safe="false" threads=num_cpus():
+    just build-htils release {{ force }} {{ thread_safe }} static {{ threads }}
+
+htils-release-threadsafe-static force="false" threads=num_cpus():
+    just htils-release-static {{ force }} true {{ threads }}
 
 h2otils-release-static force="false" threads=num_cpus():
-    just build-h2otils-static {{ force }} {{ threads }}
+    just build-h2otils release {{ force }} static {{ threads }}
 
-debug-htils-test force="false" threads=num_cpus():
-    just build-htils-test debug {{ force }} {{ threads }}
+debug-htils-test force="false" thread_safe="true" threads=num_cpus():
+    just build-htils-test debug {{ force }} {{ thread_safe }} {{ threads }}
 
 debug-h2otils-test force="false" threads=num_cpus():
     just build-h2otils-test debug {{ force }} {{ threads }}
 
-release-htils-test force="false" threads=num_cpus():
-    just build-htils-test release {{ force }} {{ threads }}
+release-htils-test force="false" thread_safe="true" threads=num_cpus():
+    just build-htils-test release {{ force }} {{ thread_safe }} {{ threads }}
 
 release-h2otils-test force="false" threads=num_cpus():
     just build-h2otils-test release {{ force }} {{ threads }}
@@ -566,12 +618,12 @@ clean:
     [[ ! -d {{ out }} ]] || rm -rf {{ out }}
     [[ ! -d {{ bin }} ]] || rm -rf {{ bin }}
 
-__bear-compile:
-    just compile-htils debug force
+__bear-compile thread_safe="true":
+    just compile-htils debug force {{ thread_safe }}
     just compile-h2otils debug force
-    just compile-htils-test debug force
+    just compile-htils-test debug force {{ thread_safe }}
     just compile-h2otils-test debug force
 
-bear:
-    bear -- just __bear-compile
+bear thread_safe="true":
+    bear -- just __bear-compile {{ thread_safe }}
     sed -i 's|"/nix/store/[^"]*gcc[^"]*|\"gcc|g' compile_commands.json

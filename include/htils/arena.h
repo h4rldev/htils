@@ -5,6 +5,12 @@
 //
 //
 
+#ifdef HTILS_THREAD_SAFE
+#include <htils/atomic_types.h>
+#include <stdatomic.h>
+#include <threads.h>
+#endif
+
 #include <htils/basictypes.h>
 
 #define KiB(bytes) ((u64)bytes << 10)
@@ -15,6 +21,7 @@
 //
 //
 
+#ifndef HTILS_THREAD_SAFE
 /**
  * @brief An arena.
  *
@@ -29,6 +36,24 @@ typedef struct arena {
   u64 pos;
   u64 commit_pos;
 } arena_t;
+#else
+/**
+ * @brief An atomic arena.
+ *
+ * @param reserved The size of the Atomic arena.
+ * @param committed The size of the committed heap.
+ * @param pos The current atomic position of the heap.
+ * @param commit_pos The current committed position of the heap.
+ * @param commit_mtx The mutex for the committed position.
+ */
+typedef struct arena {
+  u64 reserved;
+  u64 committed;
+  atomic_u64 pos;
+  u64 commit_pos;
+  mtx_t commit_mtx;
+} arena_t;
+#endif
 
 /**
  * @brief A temporary arena.

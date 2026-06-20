@@ -1,6 +1,7 @@
 #ifndef HTILS_BASICTYPES_H
 #define HTILS_BASICTYPES_H
 
+#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -37,11 +38,15 @@ typedef double f64;
 /** Make bool more platform efficient */
 typedef u32 b32;
 
-/** Redefines true to be `b32`. */
-#define true ((b32)1)
+/** Defines true as 1. */
+#ifndef true
+#define true (1)
+#endif
 
-/** Redefines false to be `b32`. */
-#define false ((b32)0)
+/** Defines false as 0. */
+#ifndef false
+#define false (0)
+#endif
 
 /** Make NULL lower-case. */
 #define null NULL

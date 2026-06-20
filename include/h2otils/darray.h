@@ -77,7 +77,7 @@ static inline h2o_da_header_t *h2o_da__hdr(void *h2o_da) {
  */
 #define h2o_da_new(pool, darray, intitial_capacity)                            \
   do {                                                                         \
-    htils_assert(pool != null && "pool cannot be null.");                      \
+    htils_assert(pool && "pool cannot be null.");                              \
     htils_assert(intitial_capacity > 0 &&                                      \
                  "Initial capacity must be greater than 0");                   \
                                                                                \
@@ -109,9 +109,9 @@ static inline h2o_da_header_t *h2o_da__hdr(void *h2o_da) {
  */
 #define h2o_da_append(pool, darray, item)                                      \
   do {                                                                         \
-    htils_assert(pool != null && "Pool cannot be null.");                      \
-    htils_assert(darray != null && "Darray cannot be null.");                  \
-    htils_assert(item != null && "Item cannot be null.");                      \
+    htils_assert(pool && "Pool cannot be null.");                              \
+    htils_assert(darray && "Darray cannot be null.");                          \
+    htils_assert(item && "Item cannot be null.");                              \
                                                                                \
     if (!(darray) || h2o_da_len(darray) >= h2o_da_cap(darray)) {               \
       u64 old_capacity = h2o_da_cap(darray);                                   \
