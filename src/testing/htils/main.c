@@ -437,6 +437,28 @@ HTILS_TEST(arena_clear) {
   return HTILS_TEST_PASS;
 }
 
+HTILS_TEST(arena_clear_decommits) {
+  arena_t *new_arena = arena_new(GiB(1), KiB(128));
+  u64 base_commit = new_arena->committed;
+
+  (void)arena_alloc(new_arena, u8, MiB(4));
+  HTILS_TEST_ASSERT(new_arena->commit_pos > base_commit,
+                    "Expected commit_pos to grow past the base commit.");
+
+  arena_clear(new_arena);
+  HTILS_TEST_ASSERT(new_arena->pos == (sizeof(arena_t)),
+                    "Failed to clear to base.");
+  HTILS_TEST_ASSERT(new_arena->commit_pos == base_commit,
+                    "Clear did not decommit the grown region.");
+
+  (void)arena_alloc(new_arena, u8, MiB(4));
+  HTILS_TEST_ASSERT(new_arena->commit_pos > base_commit,
+                    "Re-allocation after clear should re-commit.");
+
+  arena_free(new_arena);
+  return HTILS_TEST_PASS;
+}
+
 //
 //
 //
@@ -520,6 +542,28 @@ HTILS_TEST(arena_clear_atomic) {
   arena_clear(new_arena);
   HTILS_TEST_ASSERT(atomic_load(&arena->pos) == (sizeof(arena_t)),
                     "Failed to clear to base.");
+
+  arena_free(new_arena);
+  return HTILS_TEST_PASS;
+}
+
+HTILS_TEST(arena_clear_decommits_atomic) {
+  arena_t *new_arena = arena_new(GiB(1), KiB(128));
+  u64 base_commit = new_arena->committed;
+
+  (void)arena_alloc(new_arena, u8, MiB(4));
+  HTILS_TEST_ASSERT(new_arena->commit_pos > base_commit,
+                    "Expected commit_pos to grow past the base commit.");
+
+  arena_clear(new_arena);
+  HTILS_TEST_ASSERT(atomic_load(&new_arena->pos) == (sizeof(arena_t)),
+                    "Failed to clear to base.");
+  HTILS_TEST_ASSERT(new_arena->commit_pos == base_commit,
+                    "Clear did not decommit the grown region.");
+
+  (void)arena_alloc(new_arena, u8, MiB(4));
+  HTILS_TEST_ASSERT(new_arena->commit_pos > base_commit,
+                    "Re-allocation after clear should re-commit.");
 
   arena_free(new_arena);
   return HTILS_TEST_PASS;
@@ -1198,6 +1242,7 @@ int main(int argc, cstr **argv) {
   HTILS_TEST_RUN(arena_dealloc);
   HTILS_TEST_RUN(arena_dealloc_to);
   HTILS_TEST_RUN(arena_clear);
+  HTILS_TEST_RUN(arena_clear_decommits);
 
   HTILS_TEST_RUN(temp_arena_new);
   HTILS_TEST_RUN(temp_arena_free);
@@ -1209,6 +1254,7 @@ int main(int argc, cstr **argv) {
   HTILS_TEST_RUN(arena_dealloc_atomic);
   HTILS_TEST_RUN(arena_dealloc_to_atomic);
   HTILS_TEST_RUN(arena_clear_atomic);
+  HTILS_TEST_RUN(arena_clear_decommits_atomic);
 
   HTILS_TEST_RUN(temp_arena_new_atomic);
   HTILS_TEST_RUN(temp_arena_free_atomic);

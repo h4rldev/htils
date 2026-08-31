@@ -43,7 +43,7 @@ debug_compile_flags := debug_shared_flags + ' -Wall -Wextra -Wpedantic -Wno-unus
 htils_debug_link_flags := debug_shared_flags + link_flags + ' -static-libasan -lhtils-debug -Llib'
 h2otils_debug_link_flags := htils_debug_link_flags + ' -lh2otils-debug -lh2o'
 
-release_shared_flags := '-O2 -std=gnu11 -Wl,-rpath,.'
+release_shared_flags := '-O2 -std=gnu11 -fPIC -Wl,-rpath,.'
 release_compile_flags := release_shared_flags
 htils_release_link_flags := release_shared_flags + link_flags + '  -lhtils -Llib'
 h2otils_release_link_flags := htils_release_link_flags + ' -lh2otils -lh2o'
@@ -336,7 +336,7 @@ link-htils-test type="debug" static="dynamic":
     #!/usr/bin/env bash
     shopt -s globstar
 
-    [[ -d {{ htils_test_out }} ]] || just compile-test {{ type }}
+    [[ -d {{ htils_test_out }} ]] || just compile-htils-test {{ type }}
     [[ -d {{ bin }} ]] || mkdir -p {{ bin }}
 
     WILL_LINK=false
@@ -601,17 +601,17 @@ htils-release-threadsafe-static force="false" threads=num_cpus():
 h2otils-release-static force="false" threads=num_cpus():
     just build-h2otils release {{ force }} static {{ threads }}
 
-debug-htils-test force="false" thread_safe="true" threads=num_cpus():
-    just build-htils-test debug {{ force }} {{ thread_safe }} {{ threads }}
+debug-htils-test force="false" thread_safe="true" static="dynamic" threads=num_cpus():
+    just build-htils-test debug {{ force }} {{ thread_safe }} {{ static }} {{ threads }}
 
-debug-h2otils-test force="false" threads=num_cpus():
-    just build-h2otils-test debug {{ force }} {{ threads }}
+debug-h2otils-test force="false" static="dynamic" threads=num_cpus():
+    just build-h2otils-test debug {{ force }} {{ static }} {{ threads }}
 
-release-htils-test force="false" thread_safe="true" threads=num_cpus():
-    just build-htils-test release {{ force }} {{ thread_safe }} {{ threads }}
+release-htils-test force="false" thread_safe="true" static="dynamic" threads=num_cpus():
+    just build-htils-test release {{ force }} {{ thread_safe }} {{ static }} {{ threads }}
 
-release-h2otils-test force="false" threads=num_cpus():
-    just build-h2otils-test release {{ force }} {{ threads }}
+release-h2otils-test force="false" static="dynamic" threads=num_cpus():
+    just build-h2otils-test release {{ force }} {{ static }} {{ threads }}
 
 clean:
     [[ ! -d {{ lib }} ]] || rm -rf {{ lib }}

@@ -492,6 +492,27 @@ void arena_clear(arena_t *arena) {
   htils_assert(arena && "Atomic arena cannot be null.");
 #endif
   arena_dealloc_to(arena, ARENA_BASE_POS);
+
+  u64 decommit_from = arena->committed;
+  u64 decommit_size =
+      arena->commit_pos > decommit_from ? arena->commit_pos - decommit_from : 0;
+  if (decommit_size == 0)
+    return;
+
+#ifdef HTILS_THREAD_SAFE
+  mtx_lock(&arena->commit_mtx);
+  decommit_size =
+      arena->commit_pos > decommit_from ? arena->commit_pos - decommit_from : 0;
+#endif
+
+  if (decommit_size > 0) {
+    mem_decommit((u8 *)arena + decommit_from, decommit_size);
+    arena->commit_pos = decommit_from;
+  }
+
+#ifdef HTILS_THREAD_SAFE
+  mtx_unlock(&arena->commit_mtx);
+#endif
 }
 
 /// :3
