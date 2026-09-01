@@ -76,9 +76,9 @@ static inline da_header_t *da__hdr(void *da) {
                  "Initial capacity must be greater than 0");                   \
                                                                                \
     u64 capacity = (intitial_capacity);                                        \
-    u64 alloc_size = DA_HEADER_SIZE + capacity;                                \
+    u64 alloc_size = DA_HEADER_SIZE + capacity * sizeof(*(darray));            \
                                                                                \
-    da_header_t *header = arena_alloc_zeroed((arena), darray, alloc_size);     \
+    da_header_t *header = __arena_alloc_zeroed((arena), alloc_size);           \
     header->cap = capacity;                                                    \
     header->len = 0;                                                           \
     (darray) = (void *)(header + 1);                                           \
@@ -107,7 +107,6 @@ static inline da_header_t *da__hdr(void *da) {
   do {                                                                         \
     htils_assert(arena != null && "Arena cannot be null.");                    \
     htils_assert(darray != null && "Darray cannot be null.");                  \
-    htils_assert(item != null && "Item cannot be null.");                      \
                                                                                \
     if (!(darray) || da_len(darray) >= da_cap(darray)) {                       \
       u64 old_capacity = da_cap(darray);                                       \
@@ -115,9 +114,9 @@ static inline da_header_t *da__hdr(void *da) {
           old_capacity ? old_capacity + old_capacity / 2 + (old_capacity % 2)  \
                        : 8;                                                    \
       u64 old_len = da_len(darray);                                            \
-      u64 alloc_size = DA_HEADER_SIZE + new_capacity;                          \
+      u64 alloc_size = DA_HEADER_SIZE + new_capacity * sizeof(*(darray));      \
                                                                                \
-      da_header_t *header = arena_alloc((arena), darray, alloc_size);          \
+      da_header_t *header = __arena_alloc((arena), alloc_size);                \
                                                                                \
       header->cap = new_capacity;                                              \
       header->len = old_len;                                                   \
