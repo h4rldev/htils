@@ -14,6 +14,48 @@
 
 #ifdef HTILS_THREAD_SAFE
 #include <htils/atomic_types.h>
+#include <htils/worker.h>
+
+static void worker_sleep_ms(long ms) {
+  struct timespec ts = {.tv_sec = ms / 1000, .tv_nsec = (ms % 1000) * 1000000L};
+  thrd_sleep(&ts, NULL);
+}
+
+typedef struct {
+  atomic_int ticks;
+  arena_t *scratch_seen;
+  arena_t *out;
+  cstr *result;
+} worker_ctx_t;
+
+static void worker_single(void *userdata, arena_t *scratch) {
+  worker_ctx_t *c = userdata;
+  for (int i = 0; i < 5; i++) {
+    arena_alloc_zeroed(scratch, u8, 16);
+    atomic_fetch_add(&c->ticks, 1);
+    worker_sleep_ms(2);
+  }
+  cstr *r = arena_alloc_zeroed(scratch, cstr, 12);
+  (void)r;
+}
+
+static htils_worker_step_t worker_slice(void *userdata, arena_t *scratch) {
+  worker_ctx_t *c = userdata;
+  (void)scratch;
+  atomic_fetch_add(&c->ticks, 1);
+  worker_sleep_ms(1);
+  return atomic_load(&c->ticks) >= 5 ? HTILS_WORKER_DONE
+                                     : HTILS_WORKER_CONTINUE;
+}
+
+static void worker_result(void *userdata, arena_t *scratch) {
+  worker_ctx_t *c = userdata;
+  arena_alloc_zeroed(scratch, u8, 16); // transient; cleared at task end
+  // the "result" goes into the caller's arena, so it survives:
+  c->result = arena_alloc_zeroed(c->out, cstr, 12);
+  memcpy(c->result, "mesh-result", 12);
+}
+
 #endif
 
 #define REMOVE false
@@ -597,6 +639,90 @@ HTILS_TEST(temp_arena_free_atomic) {
                     "Failed to free temp arena.");
 
   return HTILS_TEST_PASS;
+}
+
+//
+//
+//
+
+HTILS_TEST(worker_spawn_join) {
+  htils_worker_t slot = {0};
+  worker_ctx_t c = {0};
+  htils_worker_config_t cfg = htils_worker_config_default();
+
+  HTILS_TEST_ASSERT(htils_worker_spawn(&slot, &cfg, worker_single, &c),
+                    "worker_spawn failed");
+  HTILS_TEST_ASSERT(htils_worker_running(&slot),
+                    "worker not running after spawn");
+  htils_worker_join(&slot);
+  HTILS_TEST_ASSERT(!htils_worker_running(&slot),
+                    "worker still running after join");
+  HTILS_TEST_ASSERT(atomic_load(&c.ticks) == 5,
+                    "single-shot didn't run 5 times");
+  return NULL;
+}
+
+HTILS_TEST(worker_task_to_done) {
+  htils_worker_t slot = {0};
+  worker_ctx_t c = {0};
+  htils_worker_config_t cfg = htils_worker_config_default();
+  HTILS_TEST_ASSERT(htils_worker_spawn_task(&slot, &cfg, worker_slice, &c),
+                    "spawn_task failed");
+  htils_worker_join(&slot);
+  HTILS_TEST_ASSERT(atomic_load(&c.ticks) == 5,
+                    "sliced task didn't reach 5 slices");
+  return NULL;
+}
+
+HTILS_TEST(worker_task_stop) {
+  htils_worker_t slot = {0};
+  worker_ctx_t c = {0};
+  htils_worker_config_t cfg = htils_worker_config_default();
+  HTILS_TEST_ASSERT(htils_worker_spawn_task(&slot, &cfg, worker_slice, &c),
+                    "spawn_task failed");
+  worker_sleep_ms(4);
+  htils_worker_request_stop(&slot);
+  htils_worker_join(&slot);
+  HTILS_TEST_ASSERT(atomic_load(&c.ticks) < 5, "task didn't stop early");
+  return NULL;
+}
+
+HTILS_TEST(worker_task_pause) {
+  htils_worker_t slot = {0};
+  worker_ctx_t c = {0};
+  htils_worker_config_t cfg = htils_worker_config_default();
+  HTILS_TEST_ASSERT(htils_worker_spawn_task(&slot, &cfg, worker_slice, &c),
+                    "spawn_task failed");
+  worker_sleep_ms(3);
+  htils_worker_set_paused(&slot, true);
+  worker_sleep_ms(15);
+  i32 during = atomic_load(&c.ticks);
+  htils_worker_set_paused(&slot, false);
+  htils_worker_join(&slot);
+  HTILS_TEST_ASSERT(atomic_load(&c.ticks) == 5,
+                    "task didn't finish after resume");
+  HTILS_TEST_ASSERT(during < 5, "task advanced while paused");
+  return NULL;
+}
+
+HTILS_TEST(worker_result_survives) {
+  htils_worker_t slot = {0};
+  worker_ctx_t c = {0};
+  htils_worker_config_t cfg = htils_worker_config_default();
+  c.out = arena_new(GiB(1), MiB(1)); // caller-owned result arena
+  HTILS_TEST_ASSERT(c.out != NULL, "failed to create out arena");
+
+  HTILS_TEST_ASSERT(htils_worker_spawn(&slot, &cfg, worker_result, &c),
+                    "spawn failed");
+  htils_worker_join(&slot);
+
+  // the worker's result is still valid after the task ended + scratch cleared:
+  HTILS_TEST_ASSERT(c.result != NULL, "result pointer not set");
+  HTILS_TEST_ASSERT(memcmp(c.result, "mesh-result", 12) == 0,
+                    "result data corrupted or lost");
+
+  arena_free(c.out);
+  return NULL;
 }
 
 #endif
@@ -1258,6 +1384,12 @@ int main(int argc, cstr **argv) {
 
   HTILS_TEST_RUN(temp_arena_new_atomic);
   HTILS_TEST_RUN(temp_arena_free_atomic);
+
+  HTILS_TEST_RUN(worker_spawn_join);
+  HTILS_TEST_RUN(worker_task_to_done);
+  HTILS_TEST_RUN(worker_task_stop);
+  HTILS_TEST_RUN(worker_task_pause);
+  HTILS_TEST_RUN(worker_result_survives);
 
 #endif
 
