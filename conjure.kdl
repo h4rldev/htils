@@ -9,6 +9,7 @@ project {
     src "src/htils"
     standard gnu11
     include "include"
+    linker "mold"
   }
 
   profiles {
