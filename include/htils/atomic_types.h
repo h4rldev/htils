@@ -1,9 +1,13 @@
 #ifndef HTILS_ATOMIC_TYPES_H
 #define HTILS_ATOMIC_TYPES_H
 
+/***********************************/
+
 #include <stdatomic.h>
 
 #include <htils/basictypes.h>
+
+/***********************************/
 
 /** Atomic variant of u8. */
 typedef _Atomic u8 atomic_u8;

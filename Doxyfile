@@ -67,7 +67,7 @@ PROJECT_LOGO           =
 # when the HTML document is shown. Doxygen will copy the logo to the output
 # directory.
 
-PROJECT_ICON           = "./assets/imissyou.ico"
+PROJECT_ICON           = "./assets/imissyou.jpg"
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) path
 # into which the generated documentation will be written. If a relative path is
@@ -1026,7 +1026,7 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = "./include/" "./src/htils/" "./src/h2otils/" "README.md"
+INPUT                  = "./include/" "./src/htils/" "doxy_mainpage.md"
 
 # This tag can be used to specify the character encoding of the source files
 # that Doxygen parses. Internally Doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1241,7 +1241,7 @@ FILTER_SOURCE_PATTERNS =
 # (index.html). This can be useful if you have a project on for instance GitHub
 # and want to reuse the introduction page also for the Doxygen output.
 
-USE_MDFILE_AS_MAINPAGE = README.md
+USE_MDFILE_AS_MAINPAGE = doxy_mainpage.md
 
 # If the IMPLICIT_DIR_DOCS tag is set to YES, any README.md file found in sub-
 # directories of the project's root, is used as the documentation for that sub-
@@ -1970,14 +1970,9 @@ MATHJAX_EXTENSIONS     =
 # https://docs.mathjax.org/en/v2.7/)
 # - MathJax version 3 (see:
 # https://docs.mathjax.org/en/v3.2/)
-# - MathJax version 4 (see:<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
-- [htils](#htils)
-  - [Features](#features)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-# https://docs.mathjax.org/en/v4.0/) For an example see the documentation.
+# - MathJax version 4 (see:
+# https://docs.mathjax.org/en/v4.0/)
+# For an example see the documentation.
 # This tag requires that the tag USE_MATHJAX is set to YES.
 
 MATHJAX_CODEFILE       =
@@ -2547,7 +2542,7 @@ INCLUDE_FILE_PATTERNS  =
 # recursively expanded use the := operator instead of the = operator.
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
-PREDEFINED             =
+PREDEFINED             = HTILS_THREAD_SAFE
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

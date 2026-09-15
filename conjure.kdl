@@ -1,0 +1,55 @@
+project {
+  name htils
+  language c
+  type library
+  link static
+  version "0.1.0"
+
+  compile {
+    src "src/htils"
+    standard gnu11
+    include "include"
+  }
+
+  profiles {
+    htils-debug {
+      artifact "htils-debug"
+      c_flags -ggdb -g -Og -fsanitize=address,undefined,leak -fno-sanitize-recover=all -fno-omit-frame-pointer -fno-optimize-sibling-calls -fsanitize-address-use-after-scope -fno-common -Wall -Wextra -Wpedantic -Wno-unused-parameter
+
+      tests {
+        main {
+          src "src/testing/htils"
+        } 
+      }
+    }
+
+    htils-release {
+      link dynamic
+      c_flags -O2 -fPIC
+    }
+
+    htils-release-static {
+      extends htils-release
+      link static
+    }
+
+    htils-debug-threadsafe {
+      extends htils-debug
+      c_flags -DHTILS_THREAD_SAFE
+    }
+
+    htils-release-threadsafe {
+      extends htils-release
+      c_flags -DHTILS_THREAD_SAFE
+    }
+
+    htils-release-static-threadsafe {
+      extends htils-release-static
+      c_flags -DHTILS_THREAD_SAFE
+    }
+  }
+
+  output {
+    symlink_binaries #true
+  }
+}

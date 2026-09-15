@@ -1,8 +1,6 @@
-#include <string.h>
+/***********************************/
 
-//
-//
-//
+#include <string.h>
 
 #include <htils/arena.h>
 #include <htils/assert.h>
@@ -10,11 +8,9 @@
 #include <htils/string.h>
 #include <htils/stringmap.h>
 
-#define DEFAULT_CAPACITY 16
+/***********************************/
 
-//
-//
-//
+#define DEFAULT_CAPACITY 16
 
 /**
  * @brief Hash a key into an index.
@@ -41,6 +37,10 @@ static u64 hash_key(const string *key) {
   return hash;
 }
 
+//
+//
+//
+
 /**
  * @brief Inserts a key-value pair into the stringmap directly.
  *
@@ -54,7 +54,7 @@ static u64 hash_key(const string *key) {
  * @pre
  *  - @c map, @c key, and @c value must be valid and cannot be `null`.
  *  - @c vsize must be greater than 0 and the explicit size of the value, since
- * @value is a void * it has to be provided.
+ * @c value is a void * it has to be provided.
  */
 static void sm_insert_direct(stringmap_t *map, const string *key, void *value,
                              u64 vsize) {
@@ -73,6 +73,10 @@ static void sm_insert_direct(stringmap_t *map, const string *key, void *value,
   }
 }
 
+//
+//
+//
+
 /**
  * @brief Grow a stringmap if it's too small.
  *
@@ -88,18 +92,21 @@ static void sm_grow(stringmap_t *map) {
 
   u64 old_capacity = map->capacity;
   stringmap_entry_t *old_entries = map->entries;
-  u64 old_dead_entries = map->dead_entries;
 
   map->count = 0;
   map->capacity *= 2;
-  map->entries = arena_alloc(map->arena, stringmap_entry_t, map->capacity);
+  map->entries =
+      arena_alloc_zeroed(map->arena, stringmap_entry_t, map->capacity);
+
+  for (u64 i = 0; i < map->capacity; i++)
+    map->entries[i].state = EMPTY;
 
   for (u64 i = 0; i < old_capacity; i++)
     if (old_entries[i].state == OCCUPIED)
       sm_insert_direct(map, old_entries[i].key, old_entries[i].value,
                        old_entries[i].vsize);
 
-  map->dead_entries = old_dead_entries;
+  map->dead_entries = 0;
 }
 
 //
@@ -130,10 +137,6 @@ stringmap_t *sm_new(arena_t *arena, const u64 capacity) {
 
   return map;
 }
-
-//
-//
-//
 
 stringmap_result_t __sm_insert(stringmap_t *map, const string *key,
                                const void *value, const u64 vsize) {
@@ -208,18 +211,13 @@ stringmap_result_t sm_kill(stringmap_t *map, const string *key) {
         map->dead_entries++;
         map->count--;
         return KILLED;
-      } else {
-        return NOT_FOUND;
       }
+      break;
     }
-    idx = (idx + 1) % map->capacity;
   }
+
   return NOT_FOUND;
 }
-
-//
-//
-//
 
 void *sm_get(stringmap_t *map, const string *key) {
   htils_assert(map != null && "stringmap cannot be null.");
@@ -247,5 +245,3 @@ void *sm_get(stringmap_t *map, const string *key) {
   }
   return null;
 }
-
-/// X3

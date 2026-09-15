@@ -1,6 +1,8 @@
-# htils & h2otils
+# htils
 
-A set of utilities I prefer for C for primarily Linux, but I'm pretty certain most if not all the utilities should work for Windows too.
+A set of utilities for C, primarily targeting Linux, though most (if not all) of
+them should work on Windows too. Part of the `htils` `bread` `butter` `cheese`
+stack.
 
 ## Table of Contents
 
@@ -8,15 +10,11 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 - [Features](#features)
-  - [htils](#htils)
-  - [h2otils](#h2otils)
 - [Files](#files)
-  - [htils](#htils-1)
-  - [h2otils](#h2otils-1)
+  - [htils](#htils)
 - [Building](#building)
   - [Prerequisites](#prerequisites)
   - [How to build](#how-to-build)
-  - [For debug builds](#for-debug-builds)
 - [Todos](#todos)
 - [License](#license)
 
@@ -24,42 +22,23 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 
 ## Features
 
-### htils
-
-- Basic type-aliases that I prefer over the built-in types.
-  - `u8`-`u64`
-  - `i8`-`i64`
-  - `b32`
-  - `cstr`
-  - `ucstr`
-  - `null`
-
-- A small and flexible reserve and commit arena allocator.
-- A string type based on unsigned 8bit integers, with tons of features for its manipulation.
-- A custom assert that uses exit() instead of abort().
-- A simple stringmap, that isn't super type-agnostic, but it works well enough.
+- Basic type aliases I prefer over the built-ins: `u8`-`u64`, `i8`-`i64`, `b32`,
+  `cstr`, `ucstr`, `null`.
+- A small, flexible reserve-and-commit arena allocator.
+- A string type over unsigned 8-bit integers, with lots of manipulation helpers.
+- An assert that calls `exit()` instead of `abort()`.
+- A simple, not-particularly-type-agnostic string map.
 - Path manipulation.
 - Type-agnostic dynamic arrays.
 - File IO.
-- An easy to use cli parser.
-- A dotenv parser.
+- A small CLI parser.
+- A `.env` parser.
+- A worker pool / task system (thread-safe builds only).
 - A tiny test framework.
 
-> Final note in the features tab
->
-> This library is mostly documented, so if you need help on how to use each respective api, read the header files in `./include`
->
-> If you want a nice little documentation site, run doxygen in a clone of this repo and open index.html in `./doc/html`
->
-> Edit: The documentation site is now deployed to [https://htils.h4rl.dev](https://htils.h4rl.dev)!
-
-### h2otils
-
-- Cookie generation.
-- String manipulation based on h2o_iovec_t.
-- h2o Memory Pool based dynamic arrays
-- Variant of the htils test framework for h2o.
-- More to come...
+The library is documented in the headers under `./include`, rendered as a
+documentation site (see [Building](#building)), and deployed at
+<https://htils.h4rl.dev>.
 
 ## Files
 
@@ -67,113 +46,81 @@ A set of utilities I prefer for C for primarily Linux, but I'm pretty certain mo
 
 > Arena allocator
 
-htils/arena.h for documentation and function exports.
-
-htils/arena.c for implementation.
+`htils/arena.h` for documentation and exports; `htils/arena.c` for the
+implementation.
 
 > Strings
 
-htils/string.h for documentation and function exports.
-
-htils/string.c for implementation.
+`htils/string.h` / `htils/string.c`.
 
 > Assert
 
-htils/assert.h for documentation and function exports.
+`htils/assert.h` / `htils/assert.c`.
 
-htils/assert.c for implementation.
+> String map
 
-> Stringmap
-
-htils/stringmap.h for documentation and function exports.
-
-htils/stringmap.c for implementation.
+`htils/stringmap.h` / `htils/stringmap.c`.
 
 > Path manipulation
 
-htils/path.h for documentation and function exports.
-
-htils/path.c for implementation.
+`htils/path.h` / `htils/path.c`.
 
 > Dynamic arrays
 
-htils/darray.h for documentation and implementation.
+`htils/darray.h` (header-only).
 
 > File IO
 
-htils/file.h for documentation and function exports.
+`htils/file.h` / `htils/file.c`.
 
-htils/file.c for implementation.
+> CLI parser
 
-> Cli parser
+`htils/cli.h` / `htils/cli.c`.
 
-htils/cli.h for documentation and function exports.
+> `.env` parser
 
-htils/cli.c for implementation.
+`htils/dotenv.h` / `htils/dotenv.c`.
 
-> .env parser
+> Workers
 
-htils/dotenv.h for documentation and function exports.
-
-htils/dotenv.c for implementation.
+`htils/worker.h` / `htils/worker.c` (thread-safe builds only).
 
 > Test framework
 
-htils/test.h for documentation, and implementation.
-
-### h2otils
-
-> Cookie generation
-
-h2otils/cookie.h for documentation and function exports.
-
-h2otils/cookie.c for implementation (WIP).
-
-> Dynamic arrays
-
-h2otils/darray.h for documentation and implementation (WIP).
-
-> String manipulation
-
-h2otils/string.h for documentation and function exports.
-
-h2otils/string.c for implementation (WIP).
-
-> Test framework
-
-h2otils/test.h for documentation and implementation (WIP).
+`htils/test.h` (header-only).
 
 ## Building
 
 ### Prerequisites
 
-- GCC with GLIBC (assert depends on GNU extensions)
-- just
-- mold
+- GCC with glibc (the assert relies on GNU extensions)
+- [conjure](https://codeberg.org/h4rl/conjure)
 
 ### How to build
 
-> Run
+```
+conjure build -p htils-release          # libhtils.so
+conjure build -p htils-release-static   # libhtils.a
+conjure build -p htils-debug            # libhtils-debug.a
+```
+
+Thread-safe builds define `HTILS_THREAD_SAFE` and use the `-threadsafe`
+profiles:
 
 ```
-just release
+conjure build -p htils-release-threadsafe
+conjure build -p htils-debug-threadsafe
 ```
 
-### For debug builds
-
-> Run
-
-```
-just debug
-```
+The documentation site is generated with `doxygen` into `./doc/html`.
 
 ## Todos
 
-- [x] - Nix package.
-- [ ] - Finish h2otils.
-- [ ] - Examples.
-- [ ] - More features.
+- [x] Nix package.
+- [ ] Examples.
+- [ ] More features.
 
 ## License
 
-This project is licensed under the BSD-3 Clause License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the BSD-3 Clause License - see the
+[LICENSE](LICENSE) file for details.

@@ -1,10 +1,8 @@
+/***********************************/
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-
-//
-//
-//
 
 #include <htils/arena.h>
 #include <htils/assert.h>
@@ -12,10 +10,15 @@
 #include <htils/darray.h>
 #include <htils/string.h>
 
-//
-//
-//
+/***********************************/
 
+/**
+ * @brief Whether a byte is ASCII whitespace.
+ *
+ * @param c The byte to test.
+ *
+ * @return true for space, tab, CR, or LF.
+ */
 static inline b32 is_whitespace(u8 c) {
   return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
@@ -48,10 +51,6 @@ string *string_from_cstr(arena_t *arena, const cstr *base) {
   return out;
 }
 
-//
-//
-//
-
 string_slice string_slice_from_cstr(u8 *base, u64 len) {
   htils_assert(base && "Base cannot be null.");
   htils_assert(len > 0 && "Length must be greater than 0.");
@@ -65,10 +64,6 @@ string_slice string_slice_from_string(string *str) {
   return string_slice_from_cstr(str->base, str->len);
 }
 
-//
-//
-//
-
 cstr *string_to_cstr(const string *str) {
   htils_assert(str != null && "String cannot be null.");
   htils_assert(str->len > 0 && "String cannot be empty.");
@@ -78,10 +73,6 @@ cstr *string_to_cstr(const string *str) {
   ret[str->len] = '\0';
   return ret;
 }
-
-//
-//
-//
 
 string *string_dup(arena_t *arena, const string *from) {
   htils_assert(from && "String cannot be null.");
@@ -93,10 +84,6 @@ string *string_dup(arena_t *arena, const string *from) {
 
   return out;
 }
-
-//
-//
-//
 
 u64 string_concat(arena_t *arena, string *dest, const string *src) {
   htils_assert(arena && "Arena cannot be null.");
@@ -171,10 +158,6 @@ u64 string_concatf(arena_t *arena, string *dest, const cstr *fmt, ...) {
   return len;
 }
 
-//
-//
-//
-
 b32 stringcmp(const string *first, const string *second) {
   htils_assert(first && "First string cannot be null.");
   htils_assert(second && "Second string cannot be null.");
@@ -201,10 +184,6 @@ b32 stringcmpb(const string *first, const string *second, const u64 len) {
 
   return memcmp(first->base, second->base, len) == 0;
 }
-
-//
-//
-//
 
 u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena) {
   htils_assert(src && "Source string cannot be null.");
@@ -235,10 +214,6 @@ u64 string_split(string *src, u8 delim, string ***darray, arena_t *arena) {
 
   return count;
 }
-
-//
-//
-//
 
 void string_trim(string *str) {
   htils_assert(str != null && "String cannot be null.");
@@ -278,10 +253,6 @@ void string_trim_right(string *str) {
   str->len = (u64)(end - start);
 }
 
-//
-//
-//
-
 i64 string_findc(string *haystack, u8 needle) {
   htils_assert(haystack != null && "Haystack cannot be null.");
   htils_assert(haystack->len > 0 && "Haystack cannot be empty.");
@@ -308,5 +279,3 @@ i64 string_find_sstr(string *haystack, string *needle) {
 
   return -1;
 }
-
-/// :P

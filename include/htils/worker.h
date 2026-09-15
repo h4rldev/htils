@@ -20,8 +20,8 @@
  * @brief Result of one task slice.
  */
 typedef enum {
-  HTILS_WORKER_CONTINUE, // Run another slice.
-  HTILS_WORKER_DONE,     // Finished; end the task.
+  HTILS_WORKER_CONTINUE, /**< Run another slice. */
+  HTILS_WORKER_DONE,     /**< Finished; end the task. */
 } htils_worker_step_t;
 
 /**
@@ -85,6 +85,9 @@ typedef struct htils_worker_config {
  * @param fn The active single-shot body, or null.
  * @param task The active sliced body, or null.
  * @param userdata The active task context.
+ * @param pause_mtx Guards the pause wait.
+ * @param pause_cnd Signalled on resume/stop.
+ * @param primitives_init Whether the primitives have been initialized.
  */
 typedef struct htils_worker {
   thrd_t thread;
@@ -97,6 +100,7 @@ typedef struct htils_worker {
   void *userdata;
   mtx_t pause_mtx; // guards pause awaits
   cnd_t pause_cnd; // signals on resume/stop
+  b32 primitives_init;
 } htils_worker_t;
 
 //
@@ -218,11 +222,13 @@ b32 htils_worker_paused(const htils_worker_t *worker);
 //
 
 /**
- * @brief Checks whether a stop was requested (Polled by single-shot workers)
+ * @brief Checks whether a stop was requested (Polled by single-shot workers).
  *
  * @param worker The worker to check.
  *
  * @return true if the worker was requested to stop, false if not.
+ *
+ * @see \ref htils_worker_request_stop()
  */
 b32 htils_worker_should_stop(const htils_worker_t *worker);
 

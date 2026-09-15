@@ -1,24 +1,26 @@
 #ifndef HTILS_TEST_H
 #define HTILS_TEST_H
 
-//
-//
-//
+/***********************************/
 
 #include <htils/arena.h>
 #include <htils/basictypes.h>
 
+/***********************************/
+
+/** @internal */
 #define COLOR_GREEN "\x1b[32m"
+
+/** @internal */
 #define COLOR_CYAN "\x1b[36m"
+
+/** @internal */
 #define COLOR_RED "\x1b[31m"
+
+/** @internal */
 #define COLOR_RESET "\x1b[0m"
 
-//
-//
-//
-
-/** The test assertion, basically signals if condition is false, the test fails.
- */
+/** @brief Fail the test with @c msg when @c cond is false. */
 #define HTILS_TEST_ASSERT(cond, msg)                                           \
   do {                                                                         \
     if (!(cond)) {                                                             \
@@ -28,10 +30,31 @@
     }                                                                          \
   } while (0)
 
-/** The test macro for test declarations. */
+//
+//
+//
+
+/**
+ * @brief Declare a test.
+ *
+ * @details Expands to a `static` function `htils_test_<name>` taking an
+ * \ref arena and returning its result (\ref HTILS_TEST_PASS, or a failure
+ * message).
+ */
 #define HTILS_TEST(name) static const cstr *htils_test_##name(arena_t *arena)
 
-/** The runtime for the tests, uses temporary arenas. */
+//
+//
+//
+
+/**
+ * @brief Run a declared test.
+ *
+ * @details Runs @c name in a fresh temporary arena, printing PASS, FAIL, or
+ * SKIPPED. Expects the surrounding runner to have `arena`, `test_count`,
+ * `skips`, and `failures` in scope, and is meant to be paired with
+ * \ref HTILS_TEST_RESULT().
+ */
 #define HTILS_TEST_RUN(name)                                                   \
   do {                                                                         \
     test_count++;                                                              \
@@ -54,6 +77,10 @@
       (failures)++;                                                            \
   } while (0)
 
+//
+//
+//
+
 /** Handle the test results, prints the results and returns 0 if all tests pass,
  * returns 1 if any test fails. */
 #define HTILS_TEST_RESULT()                                                    \
@@ -73,10 +100,18 @@
     return 0;                                                                  \
   } while (0)
 
-/** Lil macro that makes test passes more opaque */
+//
+//
+//
+
+/** @brief Return value for a passing test. */
 #define HTILS_TEST_PASS null
 
-/** Lil macro to tell the test suite to skip a test */
+//
+//
+//
+
+/** @brief Return this from a test to mark it skipped. */
 #define HTILS_TEST_SKIP "@"
 
 #endif // !HTILS_TEST_H

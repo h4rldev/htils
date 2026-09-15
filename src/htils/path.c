@@ -1,11 +1,8 @@
-#include <assert.h>
+/***********************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-//
-//
-//
 
 #include <htils/arena.h>
 #include <htils/assert.h>
@@ -22,11 +19,21 @@
 #error "Unsupported platform."
 #endif
 
-//
-//
-//
+/***********************************/
 
+/**
+ * @brief Whether a byte is a path separator.
+ *
+ * @param c The byte to test.
+ *
+ * @return true for '/' or '\\'.
+ */
 static inline b32 is_sep(u8 c) { return c == '/' || c == '\\'; }
+
+#if defined(_WIN32)
+/** Type-alias of wchar_t to wcstr for type similarity reasons */
+typedef wchar_t wcstr;
+#endif
 
 //
 //
@@ -40,7 +47,13 @@ string *path_canonical(arena_t *arena, const string *path) {
   htils_assert(path->base && "Path base cannot be null.");
 
   const cstr *path_cstr = string_to_cstr(path);
+#if defined(_WIN32)
+  cstr *res = _fullpath(null, path_cstr, 0);
+#elif defined(__linux__)
   cstr *res = realpath(path_cstr, null);
+#else
+#error "Unsupported platform."
+#endif
   if (!res)
     return null;
 
@@ -178,10 +191,6 @@ string *path_stem(arena_t *arena, const string *path) {
   return stem;
 }
 
-//
-//
-//
-
 string *path_join(arena_t *arena, const string *first, const string *second) {
   htils_assert(first != null && "First path cannot be null.");
   htils_assert(second != null && "Second path cannot be null.");
@@ -220,10 +229,6 @@ string *path_join(arena_t *arena, const string *first, const string *second) {
   return out;
 }
 
-//
-//
-//
-
 b32 make_dir(const string *path) {
   htils_assert(path && "Path cannot be null.");
   htils_assert(path->len > 0 && "Path cannot be empty.");
@@ -256,39 +261,6 @@ b32 does_path_exist(const string *path) {
 #endif
 }
 
-#if defined(_WIN32)
-
-/** Type-alias of wchar_t to wcstr for type similarity reasons */
-typedef wchar_t wcstr;
-
-/**
- * @brief Converts a cstr to a wcstr.
- *
- * @details By converting the cstr to a wcstr using `MultiByteToWideChar()` with
- * the `CP_ACP` code page, making sure the size is correct.
- *
- * @param arena The arena to allocate the wcstr from.
- * @param cstr The cstr to convert.
- *
- * @return The converted wcstr.
- */
-wcstr *cstr_to_wcstr(arena_t *arena, const cstr *cstr) {
-  htils_assert(cstr != null && "C-String cannot be null.");
-
-  UINT code_page = CP_ACP;
-  u64 size_needed = MultiByteToWideChar(code_page, 0, cstr, -1, null, 0);
-  htils_assert(size_needed > 0 && "Failed to get size for wcstr.");
-
-  wcstr *out = arena_alloc(arena, wcstr, size_needed);
-  htils_assert(MultiByteToWideChar(code_page, 0, cstr, -1, out, size_needed) >
-                   0 &&
-               "Failed to convert cstr to wcstr.");
-
-  return out;
-}
-
-#endif
-
 b32 path_remove(const string *path) {
   htils_assert(path != null && "Path cannot be null.");
   htils_assert(path->len > 0 && "Path cannot be empty.");
@@ -297,19 +269,19 @@ b32 path_remove(const string *path) {
   return remove(string_to_cstr(path)) == 0;
 #elif defined(_WIN32)
   cstr *path_cstr = string_to_cstr(path);
-  wcstr *path_wcstr = cstr_to_wcstr(arena, path_cstr);
 
   wcstr sz_buf[MAX_PATH + 2];
-  wcsncpy_s(sz_buf, MAX_PATH + 1, path_wcstr, _TRUNCATE);
-  sz_buf[wcslen(sz_buf) + 1] = L'\0';
+  int n = MultiByteToWideChar(CP_ACP, 0, path_cstr, -1, sz_buf, MAX_PATH);
+  if (n <= 0)
+    return false;
+  sz_buf[n] = L'\0'; // SHFileOperation needs a double-null terminator
 
   SHFILEOPSTRUCTW fop = {0};
   fop.wFunc = FO_DELETE;
   fop.pFrom = sz_buf;
-  fop.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI;
-  fop.fFlags |= FOF_ALLOWUNDO;
+  fop.fFlags = FOF_NOCONFIRMATION | FOF_SILENT | FOF_NOERRORUI | FOF_ALLOWUNDO;
 
-  return (SHFileOperationW(&fop) == 0 && !fop.fAnyOperationsAborted);
+  return SHFileOperationW(&fop) == 0 && !fop.fAnyOperationsAborted;
 #else
 #error "Unsupported platform."
 #endif

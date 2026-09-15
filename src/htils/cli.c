@@ -15,22 +15,57 @@
 //
 
 /**
+ * @brief Print the usage of the cli, automatically generated from the options
+ * in the cli.
+ *
+ * @details This will print the name, description, and usage of the cli, each
+ * option being provided.
+ *
+ * @note TODO: add footer customization.
+ *
+ * @pre @c cli and @c argv must be valid and not null.
+ *
+ * @param cli The cli to print the usage of.
+ * @param argv The argv of the cli, for simply referencing argv[0].
+ */
+static void cli_usage(htils_cli_t *cli, cstr **argv) {
+  fprintf(stderr, "%" print_string "\n", print_string_arg(cli->cli_name));
+  fprintf(stderr, "%" print_string "\n", print_string_arg(cli->cli_desc));
+  fprintf(stderr, "Usage: %s [options]\n", argv[0]);
+
+  fprintf(stderr, "Options:\n");
+  for (u64 i = 0; i < da_len(cli->options); i++) {
+    fprintf(stderr, "  %" print_string ",\t",
+            print_string_arg(cli->options[i]->cli_long));
+    fprintf(stderr, "%" print_string "\t",
+            print_string_arg(cli->options[i]->cli_short));
+    fprintf(stderr, " %" print_string "\n",
+            print_string_arg(cli->options[i]->desc));
+  }
+}
+
+//
+//
+//
+
+/**
  * @brief Generate a short cli arg for an option.
  *
  * @details This will generate a short cli arg for an option, based on the name,
  * by simply getting the first letter of the name, if the name contains '_' or
- * '-' it the short name will be 2 letters.
+ * '-' the short name will be 2 letters.
+ *
  * @note TODO: make it generate short arguments for option names longer than 2
  * words.
+ *
+ * @pre @c arena and @c name must be valid and not null.
  *
  * @param arena The arena to use for allocating memory in the cli parser.
  * @param name The name of the option.
  *
- * @pre @c arena and @c name must be valid and not null.
- *
  * @return A new \ref string containing the short cli arg.
  */
-static string *_cli_create_short(arena_t *arena, const string *name) {
+static string *cli_create_short(arena_t *arena, const string *name) {
   htils_assert(name != null && "Name cannot be null.");
   htils_assert(name->len > 0 && "Name cannot be empty.");
   htils_assert(name->base[0] != '-' &&
@@ -59,6 +94,10 @@ static string *_cli_create_short(arena_t *arena, const string *name) {
   return short_name;
 }
 
+//
+//
+//
+
 /**
  * @brief Generate a long cli arg for an option.
  *
@@ -72,7 +111,7 @@ static string *_cli_create_short(arena_t *arena, const string *name) {
  *
  * @return A new \ref string containing the long cli arg.
  */
-static string *_cli_create_long(arena_t *arena, const string *name) {
+static string *cli_create_long(arena_t *arena, const string *name) {
   htils_assert(name != null && "Name cannot be null.");
   htils_assert(name->len > 0 && "Name cannot be empty.");
   htils_assert(name->base[0] != '-' &&
@@ -84,6 +123,10 @@ static string *_cli_create_long(arena_t *arena, const string *name) {
   memcpy(long_name->base + 2, name->base, name->len);
   return long_name;
 }
+
+//
+//
+//
 
 /**
  * @brief Find a short cli arg for an option.
@@ -105,11 +148,16 @@ static htils_cli_option_t *cli_find_short(htils_cli_t *cli, u8 c) {
   return null;
 }
 
+//
+//
+//
+
 /**
  * @brief Find a long cli arg for an option.
  *
  * @param cli The cli to find the long cli arg for.
  * @param name The name of the option to find the long cli arg for.
+ * @param name_len The length of the name.
  *
  * @pre @c cli and @c name must be valid and not null.
  *
@@ -135,41 +183,12 @@ void cli_add(htils_cli_t *cli, const string *name, const string *desc,
   htils_cli_option_t *option = arena_alloc(cli->arena, htils_cli_option_t, 1);
   option->name = string_dup(cli->arena, name);
   option->desc = string_dup(cli->arena, desc);
-  option->cli_short = _cli_create_short(cli->arena, name);
-  option->cli_long = _cli_create_long(cli->arena, name);
+  option->cli_short = cli_create_short(cli->arena, name);
+  option->cli_long = cli_create_long(cli->arena, name);
   option->cli_short_short = name->base[0];
   option->has_arg = requires_arg;
 
   da_append(cli->arena, cli->options, option);
-}
-
-/**
- * @brief Print the usage of the cli, auttomatically generated from the options
- * in the cli.
- *
- * @details This will print the name, description, and usage of the cli, each
- * option being provided.
- * @note TODO: add footer customization.
- *
- * @param cli The cli to print the usage of.
- * @param argv The argv of the cli, for simply referencing argv[0].
- *
- * @pre @c cli and @c argv must be valid and not null.
- */
-void cli_usage(htils_cli_t *cli, cstr **argv) {
-  fprintf(stderr, "%" print_string "\n", print_string_arg(cli->cli_name));
-  fprintf(stderr, "%" print_string "\n", print_string_arg(cli->cli_desc));
-  fprintf(stderr, "Usage: %s [options]\n", argv[0]);
-
-  fprintf(stderr, "Options:\n");
-  for (u64 i = 0; i < da_len(cli->options); i++) {
-    fprintf(stderr, "  %" print_string ",\t",
-            print_string_arg(cli->options[i]->cli_long));
-    fprintf(stderr, "%" print_string "\t",
-            print_string_arg(cli->options[i]->cli_short));
-    fprintf(stderr, " %" print_string "\n",
-            print_string_arg(cli->options[i]->desc));
-  }
 }
 
 htils_cli_t *cli_new(arena_t *arena, i64 argc, cstr **argv, const string *name,

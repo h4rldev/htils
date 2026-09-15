@@ -1,5 +1,6 @@
 .cache
 .direnv
+.conjure
 .wrangler
 
 lib
@@ -7,6 +8,7 @@ out
 bin
 doc
 tests_out
+main
 
 result
 result-*

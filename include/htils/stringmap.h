@@ -1,20 +1,22 @@
 #ifndef HTILS_STRINGMAP_H
 #define HTILS_STRINGMAP_H
 
+/***********************************/
+
+#include <htils/basictypes.h>
+
 #include <htils/arena.h>
 #include <htils/basictypes.h>
 #include <htils/string.h>
 
-//
-//
-//
+/***********************************/
 
 /**
  * @brief The state of a stringmap entry.
  *
- * @param EMPTY The entry is empty.
- * @param OCCUPIED The entry is occupied.
- * @param DEAD The entry is dead.
+ * @var EMPTY The entry is empty.
+ * @var OCCUPIED The entry is occupied.
+ * @var DEAD The entry is dead.
  */
 typedef enum stringmap_entry_state {
   EMPTY,
@@ -26,11 +28,11 @@ typedef enum stringmap_entry_state {
  *
  * @brief The result of a stringmap operation.
  *
- * @param CREATED The entry was created.
- * @param UPDATED The entry was updated.
+ * @var CREATED The entry was created.
+ * @var UPDATED The entry was updated.
  *
- * @param NOT_FOUND The entry was not found.
- * @param KILLED The entry was killed.
+ * @var NOT_FOUND The entry was not found.
+ * @var KILLED The entry was killed.
  */
 typedef enum stringmap_result {
   CREATED,
@@ -45,6 +47,7 @@ typedef enum stringmap_result {
  *
  * @param key The key of the entry.
  * @param value The value of the entry.
+ * @param vsize The size of the value.
  * @param state The state of the entry.
  */
 typedef struct stringmap_entry {
@@ -72,18 +75,10 @@ typedef struct stringmap {
   u64 dead_entries;
 } stringmap_t;
 
-//
-//
-//
-
 /** Optionally use a nullable type for stringmaps. */
 #ifdef USE_NULLABLE_TYPES
 typedef stringmap_t stringmap_nullable_t;
 #endif
-
-//
-//
-//
 
 /**
  * @brief Initializes a new stringmap.
@@ -113,16 +108,16 @@ stringmap_t *sm_new(arena_t *arena, const u64 capacity);
  * automatically grown.
  *
  * @note This function is not meant to be run directly, and is called by the
- * \ref sm_ insert() macro.
+ * \ref sm_insert() macro.
  *
- * @param stringmap The \ref stringmap to insert into.
+ * @param map The \ref stringmap to insert into.
  * @param key The key to insert.
  * @param value The value to associate with the key.
  * @param vsize The size of the value.
  *
  * @pre
- * - @c stringmap and @c key must be valid and cannot be `null`.
- * - @c value can't be `null`, as it would leave to a null dereference.
+ * - @c map and @c key must be valid and cannot be `null`.
+ * - @c value can't be `null`, as it would lead to a null dereference.
  *
  * @return The result of the insert (which will be either CREATED or UPDATED in
  * this case).
@@ -133,16 +128,20 @@ stringmap_result_t __sm_insert(stringmap_t *map, const string *key,
 #define SM_VAL(val) (val), sizeof(*val)
 #define sm_insert(map, key, value) __sm_insert(map, key, SM_VAL(value))
 
+//
+//
+//
+
 /**
- * @brief Remove / Kill entry at @c key from the \ref stringmap.
+ * @brief Remove the entry at @c key from the \ref stringmap.
  *
  * @details Marks an entry as DEAD, if the key doesn't exist, it will
  * return NOT_FOUND, otherwise it will return KILLED.
  *
- * @param stringmap The \ref stringmap to remove from.
+ * @param map The \ref stringmap to remove from.
  * @param key The key to remove.
  *
- * @pre @c stringmap and @c key must be valid and cannot be `null`.
+ * @pre @c map and @c key must be valid and cannot be `null`.
  *
  * @return The result of the remove (which will be either KILLED or NOT_FOUND in
  * this case).
@@ -154,15 +153,15 @@ stringmap_result_t sm_kill(stringmap_t *map, const string *key);
 //
 
 /**
- * @brief Get a V from the \ref stringmap.
+ * @brief Get a value from the \ref stringmap.
  *
- * @details Gets an entry from the \ref stringmap, if the entry doesn't exist,
- * it will be null.
+ * @details Returns the value stored at @c key, or `null` if the key is absent
+ * or the entry is dead.
  *
- * @param stringmap The \ref stringmap to get from.
+ * @param map The \ref stringmap to get from.
  * @param key The key to get.
  *
- * @pre @c stringmap and @c key must be valid and cannot be `null`.
+ * @pre @c map and @c key must be valid and cannot be `null`.
  *
  * @return The value associated with the key, or null if it doesn't exist or is
  * dead.

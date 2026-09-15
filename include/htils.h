@@ -5,8 +5,8 @@
 #ifndef HTILS_H
 #define HTILS_H
 
-/** These headers wont be included if HTILS_IMEPLEMENTATION is defined. */
-#ifndef HTILS_IMPLEMENTATION
+// /** These headers wont be included if HTILS_IMPLEMENTATION is defined. */
+// #ifndef HTILS_IMPLEMENTATION
 
 /** Disables types headers for current translation unit if NO_TYPES are defined.
  */
@@ -17,12 +17,15 @@
 #ifdef HTILS_USE_ALL
 #include <htils/arena.h>
 #include <htils/assert.h>
+#include <htils/cli.h>
 #include <htils/darray.h>
+#include <htils/dotenv.h>
 #include <htils/file.h>
-#include <htils/hashmap.h>
 #include <htils/path.h>
 #include <htils/string.h>
+#include <htils/stringmap.h>
 #include <htils/test.h>
+#include <htils/worker.h>
 #endif
 
 #ifdef HTILS_USE_MUSTHAVES
@@ -40,16 +43,20 @@
 #include <htils/assert.h>
 #endif
 
+#ifdef HTILS_USE_CLI
+#include <htils/cli.h>
+#endif
+
 #ifdef HTILS_USE_DARRAY
 #include <htils/darray.h>
 #endif
 
-#ifdef HTILS_USE_FILE
-#include <htils/file.h>
+#ifdef HTILS_USE_DOTENV
+#include <htils/dotenv.h>
 #endif
 
-#ifdef HTILS_USE_STRINGMAP
-#include <htils/stringmap.h>
+#ifdef HTILS_USE_FILE
+#include <htils/file.h>
 #endif
 
 #ifdef HTILS_USE_PATH
@@ -60,10 +67,18 @@
 #include <htils/string.h>
 #endif
 
+#ifdef HTILS_USE_STRINGMAP
+#include <htils/stringmap.h>
+#endif
+
 #ifdef HTILS_USE_TEST
 #include <htils/test.h>
 #endif
 
-#endif // !HTILS_IMPLEMENTATION
+#ifdef HTILS_USE_WORKER
+#include <htils/worker.h>
+#endif
+
+// #endif // !HTILS_IMPLEMENTATION
 
 #endif // !HTILS_H

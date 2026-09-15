@@ -1,9 +1,7 @@
 #ifndef HTILS_ARENA_H
 #define HTILS_ARENA_H
 
-//
-//
-//
+/***********************************/
 
 #ifdef HTILS_THREAD_SAFE
 #include <htils/atomic_types.h>
@@ -13,13 +11,11 @@
 
 #include <htils/basictypes.h>
 
+/***********************************/
+
 #define KiB(bytes) ((u64)bytes << 10)
 #define MiB(bytes) ((u64)bytes << 20)
 #define GiB(bytes) ((u64)bytes << 30)
-
-//
-//
-//
 
 #ifndef HTILS_THREAD_SAFE
 /**
@@ -73,19 +69,21 @@ typedef struct temp_arena {
 /**
  * @brief Create a new \ref arena.
  *
- * @details Initializes a new \ref arena using <a
+ * @details Reserves `reserve_size` bytes of virtual address space (plus the
+ * \ref arena header) and commits the first `commit_size` bytes. Later
+ * allocations commit further `commit_size` chunks as needed, up to the reserve.
+ * Backed by <a
  * href="https://man7.org/linux/man-pages/man2/mmap.2.html"
  * target="_blank">mmap()</a> or <a
  * href="https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc"
  * target="_blank">VirtualAlloc()</a>, depending on system.
  *
- * @param reserve_size The size of the \ref arena to reserve.
- * @param commit_size The size of the \ref arena to commit.
- *
  * @pre
  * - @c reserve_size must be greater than 0.
- * - @c commit_size must be greater than 0 and less than or equal to @c
- * reserve_size.
+ * - @c commit_size must be greater than 0 and less than @c reserve_size.
+ *
+ * @param reserve_size The size of the \ref arena to reserve.
+ * @param commit_size The size of the \ref arena to commit.
  *
  * @return A pointer to the new arena.
  *
@@ -93,7 +91,7 @@ typedef struct temp_arena {
  * href="https://man7.org/linux/man-pages/man2/mmap.2.html"
  * target="_blank">mmap()</a>, <a
  * href="https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc"
- * target="_blank">VirtualAlloc()</a>
+ * target="_blank">VirtualAlloc()</a>, \ref arena_free()
  */
 arena_t *arena_new(u64 reserve_size, u64 commit_size);
 
@@ -108,9 +106,9 @@ arena_t *arena_new(u64 reserve_size, u64 commit_size);
  * cause the kernel usually frees these pages for you, but its useful if you use
  * multiple arenas..
  *
- * @param arena The \ref arena to free.
- *
  * @pre @c arena must be valid and cannot be `null`.
+ *
+ * @param arena The \ref arena to free.
  *
  * @see <a href="https://man7.org/linux/man-pages/man3/munmap.3p.html"
  * target="_blank">munmap()</a>, <a
@@ -129,15 +127,16 @@ void arena_free(arena_t *arena);
  * @note This function is not meant to be run directly, and is called by the
  * \ref arena_alloc() macro.
  *
- * @details Through basically pushing the position forwards and returning a
- * small chunk of memory from the committed heap.
+ * @details Advances the position and returns a `size`-byte chunk from the
+ * committed region, committing another chunk first if the request would cross
+ * it.
+ *
+ * @pre
+ * - @c arena must be valid and cannot be `null`.
+ * - @c size must be greater than 0.
  *
  * @param arena The \ref arena to allocate from.
  * @param size The size of the chunk to allocate.
- *
- * @pre
- * - @c arena and @c size must be valid and cannot be `null`.
- * - @c size must be greater than 0.
  *
  * @return A pointer to the allocated chunk.
  *
@@ -151,15 +150,14 @@ void *__arena_alloc(struct arena *arena, u64 size);
  * @note This function is not meant to be run directly, and is called by the
  * \ref arena_alloc_zeroed() macro.
  *
- * @details Through basically pushing the position forwards and returning a
- * small chunk of memory from the committed heap.
+ * @details Like \ref __arena_alloc(), with the returned chunk zeroed.
+ *
+ * @pre
+ * - @c arena must be valid and cannot be `null`.
+ * - @c size must be greater than 0.
  *
  * @param arena The \ref arena to allocate from.
  * @param size The size of the chunk to allocate.
- *
- * @pre
- * - @c arena and @c size must be valid and cannot be `null`.
- * - @c size must be greater than 0.
  *
  * @return A pointer to the allocated chunk.
  *
@@ -173,15 +171,15 @@ void *__arena_alloc_zeroed(struct arena *arena, u64 size);
  * @note This function is not meant to be run directly, and is called by the
  * \ref arena_dealloc() macro.
  *
- * @details Through basically popping back the position, so that it may
- * be reused for other allocations.
+ * @details Moves the position back by @c size, so the freed tail can be reused
+ * by later allocations.
+ *
+ * @pre
+ * - @c arena must be valid and cannot be `null`.
+ * - @c size must be greater than 0.
  *
  * @param arena The \ref arena to deallocate from.
  * @param size The size of the chunk to deallocate.
- *
- * @pre
- * - @c arena and @c size must be valid and cannot be `null`.
- * - @c size must be greater than 0.
  *
  * @see \ref arena_dealloc()
  */
@@ -199,13 +197,13 @@ void __arena_dealloc(struct arena *arena, u64 size);
  * to being able to specify the type, this will automatically grow the commit
  * size if it's too small, all this logic resides in \ref __arena_alloc().
  *
+ * @pre
+ * - @c arena must be valid and cannot be `null`.
+ * - @c type must be a valid type and @c size greater than 0.
+ *
  * @param arena The \ref arena to allocate from.
  * @param type The type of the chunk to allocate.
  * @param size The size of the chunk to allocate.
- *
- * @pre
- * - @c arena, @c type, and @c size must be valid and cannot be `null`.
- * - @c type must be a valid type.
  *
  * @return A pointer to the allocated chunk.
  *
@@ -223,13 +221,13 @@ void __arena_dealloc(struct arena *arena, u64 size);
  * size if it's too small, all this logic resides in \ref
  * __arena_alloc_zeroed().
  *
+ * @pre
+ * - @c arena must be valid and cannot be `null`.
+ * - @c type must be a valid type and @c size greater than 0.
+ *
  * @param arena The \ref arena to allocate from.
  * @param type The type of the chunk to allocate.
  * @param size The size of the chunk to allocate.
- *
- * @pre
- * - @c arena, @c type, and @c size must be valid and cannot be `null`.
- * - @c type must be a valid type.
  *
  * @return A pointer to the allocated chunk.
  *
@@ -245,13 +243,13 @@ void __arena_dealloc(struct arena *arena, u64 size);
  * \ref __arena_dealloc(), the reason this is a macro is to be able to pass
  * type.
  *
+ * @pre
+ * - @c arena must be valid and cannot be `null`.
+ * - @c type must be a valid type and @c size greater than 0.
+ *
  * @param arena The \ref arena to deallocate from.
  * @param type The type of the chunk to deallocate.
  * @param size The size of the chunk to deallocate.
- *
- * @pre
- * - @c arena, @c type, and @c size must be valid and cannot be `null`.
- * - @c type must be a valid type.
  *
  * @see \ref __arena_dealloc()
  */
@@ -263,18 +261,17 @@ void __arena_dealloc(struct arena *arena, u64 size);
 //
 
 /**
- * @brief Set @c arena position to @pos.
+ * @brief Set @c arena position to @c pos.
  *
- * @details Through setting the position of the \ref arena to @c pos, useful for
- * clearing or removing a chunk of data you know you dont need any more. Uses
- * \ref __arena_dealloc() internally.
- *
- * @param arena The \ref arena to deallocate from.
- * @param pos The position to deallocate to.
+ * @details Moves the position back to `pos`, freeing everything allocated after
+ * it. This is what \ref temp_arena_free() and \ref arena_clear() are built on.
  *
  * @pre
  * - @c arena and @c pos must be valid and cannot be `null`.
  * - @c pos must be greater than 0.
+ *
+ * @param arena The \ref arena to deallocate from.
+ * @param pos The position to deallocate to.
  *
  * @see \ref __arena_dealloc()
  */
@@ -283,13 +280,13 @@ void arena_dealloc_to(arena_t *arena, u64 pos);
 /**
  * @brief Clear the \ref arena.
  *
- * @details Pops the \ref arena to the base position of `ARENA_BASE_POS` using
- * \ref arena_dealloc_to(), then flushes the commit position using
- * `mem_decommit()` and `mem_commit()`.
- *
- * @param arena The \ref arena to clear.
+ * @details Resets the position to the base with \ref arena_dealloc_to(), then
+ * decommits everything past the initial commit, returning it to the OS. The
+ * initial `commit_size` region stays committed.
  *
  * @pre @c arena must be valid and cannot be `null`.
+ *
+ * @param arena The \ref arena to clear.
  *
  * @see \ref arena_dealloc_to()
  */
@@ -302,14 +299,14 @@ void arena_clear(arena_t *arena);
 /**
  * @brief Create a new \ref temp_arena.
  *
- * @details Through saving a snapshot of the current `pos` param of the \ref
- * arena, to then pop back to when you run \ref temp_arena_free().
- *
- * @param arena The \ref arena to create the temporary arena from.
+ * @details Snapshots the arena's current position, to be restored by
+ * \ref temp_arena_free().
  *
  * @pre @c arena must be valid and cannot be `null`.
  *
- * ®return The new \ref temp_arena.
+ * @param arena The \ref arena to create the temporary arena from.
+ *
+ * @return The new \ref temp_arena.
  *
  * @see \ref temp_arena_free()
  */
@@ -318,13 +315,12 @@ temp_arena_t temp_arena_new(arena_t *arena);
 /**
  * @brief Free a \ref temp_arena.
  *
- * @details By popping the \ref arena back to the position it was at when the
- * temp
- * \ref arena was initialized using \ref temp_arena_new().
- *
- * @param temp The \ref temp_arena to free.
+ * @details Moves the arena back to the position captured by
+ * \ref temp_arena_new().
  *
  * @pre @c temp must be valid and cannot be `null`.
+ *
+ * @param temp The \ref temp_arena to free.
  *
  * @see \ref temp_arena_new()
  */

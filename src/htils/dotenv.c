@@ -1,12 +1,9 @@
+/***********************************/
+
 #include <ctype.h>
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-//
-//
-//
 
 #include <htils/assert.h>
 #include <htils/darray.h>
@@ -14,6 +11,137 @@
 #include <htils/file.h>
 #include <htils/path.h>
 #include <htils/string.h>
+
+#if defined(__linux__)
+#include <dirent.h>
+#elif defined(_WIN32)
+#include <windows.h>
+#else
+#error "Unsupported platform."
+#endif
+
+/***********************************/
+
+/**
+ * @brief A minimal directory iterator over a single directory's entries.
+ *
+ * @details Wraps the platform directory-enumeration API so the dotenv crawler
+ * can iterate entries without platform-specific code at each call site.
+ */
+typedef struct dotenv_dir_t {
+#if defined(__linux__)
+  DIR *handle;
+  struct dirent *entry;
+#elif defined(_WIN32)
+  HANDLE handle;
+  WIN32_FIND_DATAA data;
+  b32 first;
+#endif
+} dotenv_dir_t;
+
+/**
+ * @brief Open a directory for iteration.
+ *
+ * @param dir The iterator to initialize.
+ * @param arena The arena to allocate from.
+ * @param path The directory to open.
+ *
+ * @pre @c dir and @c path must be valid and cannot be `null`.
+ *
+ * @return True if the directory was opened, false if it wasn't.
+ */
+static b32 dotenv_dir_open(dotenv_dir_t *dir, arena_t *arena,
+                           const string *path) {
+#if defined(__linux__)
+  (void)arena;
+  dir->handle = opendir(string_to_cstr(path));
+  return dir->handle != null;
+#elif defined(_WIN32)
+  string *wildcard = path_join(arena, path, HTILS_STR("*"));
+  dir->handle = FindFirstFileA(string_to_cstr(wildcard), &dir->data);
+  if (dir->handle == INVALID_HANDLE_VALUE)
+    return false;
+
+  dir->first = true;
+  return true;
+#endif
+}
+
+//
+//
+//
+
+/**
+ * @brief Advance the iterator to the next directory entry.
+ *
+ * @param dir The iterator to advance.
+ * @param name Overwritten with the entry's name, valid until the next call.
+ * @param is_dir Overwritten with whether the entry is a directory.
+ *
+ * @pre @c dir, @c name, and @c is_dir must be valid and cannot be `null`.
+ *
+ * @return True if an entry was read, false once the directory is exhausted.
+ */
+static b32 dotenv_dir_next(dotenv_dir_t *dir, const cstr **name, b32 *is_dir) {
+#if defined(__linux__)
+  dir->entry = readdir(dir->handle);
+  if (!dir->entry)
+    return false;
+
+  *name = dir->entry->d_name;
+  *is_dir = dir->entry->d_type == DT_DIR;
+  return true;
+#elif defined(_WIN32)
+  if (!dir->first && !FindNextFileA(dir->handle, &dir->data))
+    return false;
+
+  dir->first = false;
+  *name = dir->data.cFileName;
+  *is_dir = (dir->data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+  return true;
+#endif
+}
+
+//
+//
+//
+
+/**
+ * @brief Close a directory iterator.
+ *
+ * @param dir The iterator to close.
+ *
+ * @pre @c dir must be valid and cannot be `null`.
+ */
+static void dotenv_dir_close(dotenv_dir_t *dir) {
+#if defined(__linux__)
+  closedir(dir->handle);
+#elif defined(_WIN32)
+  FindClose(dir->handle);
+#endif
+}
+
+//
+//
+//
+
+/**
+ * @brief Set an environment variable, overwriting any existing value.
+ *
+ * @param key The environment variable name.
+ * @param value The value to assign.
+ *
+ * @pre @c key and @c value must be valid and cannot be `null`.
+ *
+ * @return True if the variable was set, false if it wasn't.
+ */
+static b32 dotenv_set_env(const cstr *key, const cstr *value) {
+#if defined(__linux__)
+  return setenv(key, value, 1) == 0;
+#elif defined(_WIN32)
+  return _putenv_s(key, value) == 0;
+#endif
+}
 
 //
 //
@@ -25,10 +153,7 @@
  * @details By first retrieving its extension, and then verifying that the
  * extension is .env.
  *
- * @param arena The arena to allocate from.
- * @param path The path to check.
- *
- * @pre @c arena and @c path must be valid and cannot be `null`.
+ * @param path_name The path name to check.
  *
  * @return True if the path is a .env file, false if it isn't.
  */
@@ -40,65 +165,75 @@ static b32 is_env_file(const cstr *path_name) {
   return memcmp(path_name + len - 4, ".env", 4) == 0;
 }
 
+//
+//
+//
+
 /**
  * @brief Find the first .env file in a directory.
  *
- * @details Crawling through a directory and return the path of the first known
+ * @details Crawling through a directory and returns the path of the first known
  * .env file.
  *
  * @param arena The arena to allocate from.
  * @param path The path to find the .env file in.
  *
- * @pre @c arena, and @c path must be valid and cannot be `null`.
+ * @pre @c arena and @c path must be valid and cannot be `null`.
  *
  * @return The path to the .env file as \ref string, or null if none was found.
  */
 static string *find_first_env_file(arena_t *arena, const string *path) {
-  DIR *dir = opendir(string_to_cstr(path));
-  if (!dir)
+  dotenv_dir_t dir;
+  if (!dotenv_dir_open(&dir, arena, path))
     return null;
 
-  struct dirent *entry;
-  while ((entry = readdir(dir)) != null) {
-    if ((entry->d_name[0] == '.' && entry->d_name[1] == '\0') ||
-        (entry->d_name[0] == '.' && entry->d_name[1] == '.' &&
-         entry->d_name[2] == '\0'))
+  const cstr *name;
+  b32 is_dir;
+  while (dotenv_dir_next(&dir, &name, &is_dir)) {
+    if ((name[0] == '.' && name[1] == '\0') ||
+        (name[0] == '.' && name[1] == '.' && name[2] == '\0'))
       continue;
 
-    if (entry->d_type != DT_DIR && is_env_file(entry->d_name)) {
-      string *full_path = path_join(arena, path, HTILS_STR(entry->d_name));
-      closedir(dir);
+    if (!is_dir && is_env_file(name)) {
+      string *full_path = path_join(arena, path, HTILS_STR(name));
+      dotenv_dir_close(&dir);
       return full_path;
     }
 
-    if (entry->d_type == DT_DIR) {
-      string *subdir_path = path_join(arena, path, HTILS_STR(entry->d_name));
+    if (is_dir) {
+      string *subdir_path = path_join(arena, path, HTILS_STR(name));
       string *found = find_first_env_file(arena, subdir_path);
       if (found) {
-        closedir(dir);
+        dotenv_dir_close(&dir);
         return found;
       }
     }
   }
 
-  closedir(dir);
+  dotenv_dir_close(&dir);
   return null;
 }
+
+//
+//
+//
 
 /**
  * @brief Convert a string to uppercase.
  *
  * @details By iterating through the string, and converting each character to
- * it's uppercase counterpart.
+ * its uppercase counterpart.
  *
- * @param str The string to convert.
- *
- * @pre @c str must be valid and cannot be `null`.
+ * @param str_slice The string to convert.
  */
 static void to_upper(string_slice str_slice) {
   for (u64 i = 0; i < str_slice.len; i++)
     str_slice.base[i] = toupper(str_slice.base[i]);
 }
+
+//
+//
+//
 
 /**
  * @brief Trim quotes from a string.
@@ -126,6 +261,10 @@ static void trim_quotes(string_slice *str) {
     str->len -= 2;
   }
 }
+
+//
+//
+//
 
 /**
  * @brief Parse a line of a .env file.
@@ -160,7 +299,10 @@ static b32 parse_line(arena_t *arena, string *line, string **key,
     return false;
 
   i64 idx = string_findc(line, '=');
-  string_slice key_slice = string_slice_from_cstr(line->base, idx);
+  if (idx < 0)
+    return false;
+
+  string_slice key_slice = string_slice_from_cstr(line->base, (u64)idx);
   string_slice value_slice;
   value_slice.base = line->base + idx + 1;
   value_slice.len = line->len - idx - 1;
@@ -201,9 +343,11 @@ i32 htils_dotenv_load(arena_t *arena, const string *path) {
   string *basename = path_basename(arena, path);
   if (basename && stringcmp(basename, HTILS_STR(".env")))
     env_path = (string *)path;
-  else if (path_extension(arena, path) == null)
+  else if (path_extension(arena, path) == null) {
     env_path = find_first_env_file(arena, path);
-  else
+    if (!env_path)
+      return 0;
+  } else
     env_path = (string *)path; // Path doesn't have a .env or anything, but
                                // we'll read it anyways.
 
@@ -223,7 +367,7 @@ i32 htils_dotenv_load(arena_t *arena, const string *path) {
     cstr *key_cstr = string_to_cstr(key);
     cstr *value_cstr = string_to_cstr(value);
 
-    if (setenv(key_cstr, value_cstr, 1) != 0) {
+    if (!dotenv_set_env(key_cstr, value_cstr)) {
       fprintf(stderr, "Failed to set env var: %s\n", string_to_cstr(key));
       return -1;
     }

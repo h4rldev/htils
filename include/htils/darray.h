@@ -1,9 +1,13 @@
 #ifndef HTILS_DARRAY
 #define HTILS_DARRAY
 
+/***********************************/
+
 #include <htils/arena.h>
 #include <htils/assert.h>
 #include <htils/basictypes.h>
+
+/***********************************/
 
 /**
  * @brief The header of a dynamic array.
@@ -16,24 +20,16 @@ typedef struct da_header {
   u64 len;
 } da_header_t;
 
-//
-//
-//
-
 /** The size of the header of a dynamic array. */
 #define DA_HEADER_SIZE                                                         \
   ((sizeof(da_header_t) + _Alignof(max_align_t) - 1) &                         \
    ~(_Alignof(max_align_t) - 1))
 
-//
-//
-//
-
 /**
- * @brief Get the da_header
+ * @brief Get a dynamic array's header.
  *
- * @details Casts the da to `cstr *` from a dynamic array, by then
- * offsetting by the size of it.
+ * @details The header sits immediately before the array's first element;
+ * this offsets back to it.
  *
  * @param da The dynamic array to get the header from.
  *
@@ -45,10 +41,14 @@ static inline da_header_t *da__hdr(void *da) {
   return (da_header_t *)((cstr *)da - DA_HEADER_SIZE);
 }
 
-/** Gets the length of the current dynamic array */
+//
+//
+//
+
+/** Gets the length of the current dynamic array. */
 #define da_len(darray) ((darray) ? da__hdr(darray)->len : 0)
 
-/** Gets the capacity of the current dynamic array */
+/** Gets the capacity of the current dynamic array. */
 #define da_cap(darray) ((darray) ? da__hdr(darray)->cap : 0)
 
 /**
@@ -61,21 +61,21 @@ static inline da_header_t *da__hdr(void *da) {
  *
  * @param arena The \ref arena to allocate the dynamic array from.
  * @param darray The dynamic array to initialize.
- * @param intitial_capacity The initial capacity of the dynamic array.
+ * @param initial_capacity The initial capacity of the dynamic array.
  *
  * @pre
  * - @c arena, and @c darray must be valid and cannot be `null`.
- * - @c intitial_capacity must be greater than 0.
+ * - @c initial_capacity must be greater than 0.
  *
- * @see \ref arena_alloc()
+ * @see \ref arena_alloc().
  */
-#define da_new(arena, darray, intitial_capacity)                               \
+#define da_new(arena, darray, initial_capacity)                                \
   do {                                                                         \
     htils_assert(arena != null && "Arena cannot be null.");                    \
-    htils_assert(intitial_capacity > 0 &&                                      \
+    htils_assert(initial_capacity > 0 &&                                       \
                  "Initial capacity must be greater than 0");                   \
                                                                                \
-    u64 capacity = (intitial_capacity);                                        \
+    u64 capacity = (initial_capacity);                                         \
     u64 alloc_size = DA_HEADER_SIZE + capacity * sizeof(*(darray));            \
                                                                                \
     da_header_t *header = __arena_alloc_zeroed((arena), alloc_size);           \
@@ -91,8 +91,8 @@ static inline da_header_t *da__hdr(void *da) {
 /**
  * @brief Append an item to a dynamic array.
  *
- * @details By incrementing the len, has automatic capacity growing
- * functionality through extra allocations with \ref arena_alloc().
+ * @details Appends @c item, growing the capacity (a new arena allocation
+ * holding the existing elements) when the array is full.
  *
  * @param arena The \ref arena to allocate the dynamic array from.
  * @param darray The dynamic array to append to.
@@ -101,7 +101,7 @@ static inline da_header_t *da__hdr(void *da) {
  * @pre @c arena, @c darray, and @c item must be valid and cannot be
  * `null`.
  *
- * @see \ref arena_alloc()
+ * @see \ref arena_alloc().
  */
 #define da_append(arena, darray, item)                                         \
   do {                                                                         \
@@ -130,6 +130,10 @@ static inline da_header_t *da__hdr(void *da) {
     (darray)[da__hdr(darray)->len++] = (item);                                 \
   } while (0)
 
+//
+//
+//
+
 /**
  * @brief Pop an item from a dynamic array.
  *
@@ -144,8 +148,12 @@ static inline da_header_t *da__hdr(void *da) {
       da__hdr(darray)->len--;                                                  \
   } while (0)
 
+//
+//
+//
+
 /**
- * @brief Substitute with the last item in a dynamic array.
+ * @brief Get the last item of a dynamic array.
  *
  * @details Asserts that the length of the dynamic array is larger than 0, then
  * simply gets the last entry.
@@ -154,6 +162,10 @@ static inline da_header_t *da__hdr(void *da) {
  */
 #define da_last(darray)                                                        \
   (htils_assert(da__hdr(darray)->len > 0), (darray)[da__hdr(darray)->len - 1])
+
+//
+//
+//
 
 /**
  * @brief Clears a dynamic array.

@@ -1,9 +1,7 @@
+/***********************************/
+
 #include <stddef.h>
 #include <string.h>
-
-//
-//
-//
 
 #include <htils/arena.h>
 #include <htils/assert.h>
@@ -16,9 +14,7 @@
 #include <htils/atomic_types.h>
 #endif
 
-//
-//
-//
+/***********************************/
 
 #define MIN(a, b) ((a < b) ? a : b)
 #define MAX(a, b) ((a > b) ? a : b)
@@ -38,28 +34,17 @@
 /** The alignment of an arena, which is the alignment of max_align_t. */
 #define ARENA_ALIGNMENT (_Alignof(max_align_t))
 
-//
-//
-//
-
 #if defined(__linux__)
 
-//
-//
-//
+/***********************************/
 
 #include <sys/mman.h>
 #include <unistd.h>
 
-//
-//
-//
+/***********************************/
 
+/** Cached system page size, set on first use. */
 static u32 page_size_cache = 0;
-
-//
-//
-//
 
 /**
  * @brief Gets the page size of the system.
@@ -75,6 +60,10 @@ static u32 get_page_size(void) {
 
   return page_size_cache;
 }
+
+//
+//
+//
 
 /**
  * @brief Reserves a chunk of memory from the system.
@@ -94,6 +83,10 @@ static void *mem_reserve(u64 size) {
   return ret;
 }
 
+//
+//
+//
+
 /**
  * @brief Releases a chunk of memory from the system.
  *
@@ -111,11 +104,15 @@ static b32 mem_release(void *ptr, u64 size) {
   return (i32)munmap(ptr, size) == 0;
 }
 
+//
+//
+//
+
 /**
  * @brief Commits a chunk of memory to the system.
  *
- * @details By committing a memory mapping, with READ and WRITE premissions,
- * basically making a memory map usable through `mprotect()`.
+ * @details Commits a mapping for read and write via `mprotect()`, making it
+ * usable.
  *
  * @param ptr The pointer to the memory to commit.
  * @param size The size of the memory to commit.
@@ -128,6 +125,10 @@ static b32 mem_commit(void *ptr, u64 size) {
   return (i32)mprotect(ptr, size, PROT_READ | PROT_WRITE) == 0;
 }
 
+//
+//
+//
+
 /**
  * @brief Decommits a chunk of memory from the system.
  *
@@ -139,7 +140,7 @@ static b32 mem_commit(void *ptr, u64 size) {
  *
  * @return True if the memory was decommitted, false if it failed.
  */
-static b32 __attribute__((unused)) mem_decommit(void *ptr, u64 size) {
+static b32 mem_decommit(void *ptr, u64 size) {
   htils_assert(ptr != null && "Pointer cannot be null.");
   htils_assert(size > 0 && "Size must be greater than 0.");
 
@@ -148,21 +149,13 @@ static b32 __attribute__((unused)) mem_decommit(void *ptr, u64 size) {
   return (i32)madvise(ptr, size, MADV_DONTNEED) == 0;
 }
 
-//
-//
-//
-
 #elif defined(_WIN32)
 
-//
-//
-//
+/***********************************/
 
 #include <windows.h>
 
-//
-//
-//
+/***********************************/
 
 /**
  * @brief Gets the page size of the system.
@@ -181,6 +174,10 @@ static u32 get_page_size(void) {
   return page_size_cache;
 }
 
+//
+//
+//
+
 /**
  * @brief Reserves a chunk of memory from the system.
  *
@@ -198,6 +195,10 @@ static void *mem_reserve(u64 size) {
   htils_assert(ret != NULL && "Failed to reserve memory, VirtualAlloc failed.");
   return ret;
 }
+
+//
+//
+//
 
 /**
  * @brief Releases a chunk of memory from the system.
@@ -220,6 +221,10 @@ static b32 mem_release(void *ptr, u64 size) {
   return (i32)VirtualFree(ptr, 0, MEM_RELEASE) != 0;
 }
 
+//
+//
+//
+
 /**
  * @brief Commits a chunk of memory to the system.
  *
@@ -239,6 +244,10 @@ static b32 mem_commit(void *ptr, u64 size) {
   return ret != NULL;
 }
 
+//
+//
+//
+
 /**
  * @brief Decommits a chunk of memory from the system.
  *
@@ -250,16 +259,12 @@ static b32 mem_commit(void *ptr, u64 size) {
  *
  * @return True if the memory was decommitted, false if it failed.
  */
-static __attribute__((unused)) b32 mem_decommit(void *ptr, u64 size) {
+static b32 mem_decommit(void *ptr, u64 size) {
   (void)size;
   htils_assert(ptr != null && "Pointer cannot be null.");
 
   return (i32)VirtualFree(ptr, 0, MEM_DECOMMIT) != 0;
 }
-
-//
-//
-//
 
 #else
 #error "Unsupported platform."
@@ -303,10 +308,6 @@ void arena_free(arena_t *arena) {
                "Failed to release arena.");
 }
 
-//
-//
-//
-
 void *__arena_alloc(struct arena *arena, u64 size) {
   htils_assert(arena != null && "Arena cannot be null.");
   htils_assert(size > 0 && "Size must be greater than 0.");
@@ -346,20 +347,12 @@ void __arena_dealloc(struct arena *arena, u64 size) {
   arena->pos -= size;
 }
 
-//
-//
-//
-
 void arena_dealloc_to(arena_t *arena, u64 pos) {
   htils_assert(arena && "Arena cannot be null.");
 
   u64 size = pos < arena->pos ? arena->pos - pos : ARENA_BASE_POS;
   __arena_dealloc(arena, size);
 }
-
-//
-//
-//
 
 temp_arena_t temp_arena_new(arena_t *arena) {
   htils_assert(arena != null && "Arena cannot be null.");
@@ -514,5 +507,3 @@ void arena_clear(arena_t *arena) {
   mtx_unlock(&arena->commit_mtx);
 #endif
 }
-
-/// :3

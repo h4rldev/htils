@@ -17,7 +17,7 @@
  *
  * @param arg The worker to run.
  *
- * @return 0 on success, or -1 on failure.
+ * @return Always 0.
  */
 static int htils_worker_entry(void *arg) {
   htils_worker_t *worker = (htils_worker_t *)arg;
@@ -84,16 +84,23 @@ static b32 htils_worker_start(htils_worker_t *worker,
   if (!worker->scratch)
     worker->scratch = arena_new(GiB(1), MiB(1));
 
-  if (mtx_init(&worker->pause_mtx, mtx_plain) != thrd_success) {
-    fprintf(stderr, "[htils] failed to create worker mutex for worker %p\n",
-            (void *)worker);
-    return false;
-  }
+  if (!worker->primitives_init) {
+    if (mtx_init(&worker->pause_mtx, mtx_plain) != thrd_success) {
+      fprintf(stderr, "[htils] failed to create worker mutex for worker %p\n",
+              (void *)worker);
+      atomic_store(&worker->running, false);
+      return false;
+    }
 
-  if (cnd_init(&worker->pause_cnd) != thrd_success) {
-    fprintf(stderr, "[htils] failed to create worker condition for worker %p\n",
-            (void *)worker);
-    return false;
+    if (cnd_init(&worker->pause_cnd) != thrd_success) {
+      fprintf(stderr,
+              "[htils] failed to create worker condition for worker %p\n",
+              (void *)worker);
+      mtx_destroy(&worker->pause_mtx);
+      atomic_store(&worker->running, false);
+      return false;
+    }
+    worker->primitives_init = true;
   }
 
   if (thrd_create(&worker->thread, htils_worker_entry, worker) !=
@@ -193,4 +200,6 @@ void htils_worker_join(htils_worker_t *worker) {
   thrd_join(worker->thread, null);
 }
 
+#else
+int htils_worker_c_dummy(void) { return 0; }
 #endif // !HTILS_THREAD_SAFE

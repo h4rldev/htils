@@ -1,21 +1,17 @@
 #ifndef HTILS_CLI_H
 #define HTILS_CLI_H
 
-//
-//
-//
+/***********************************/
 
 #include <htils/arena.h>
 #include <htils/basictypes.h>
 #include <htils/darray.h>
 #include <htils/string.h>
 
-//
-//
-//
+/***********************************/
 
 /**
- * @brief A cli option
+ * @brief A cli option.
  *
  * @param name The name of the option
  * @param desc The description of the option
@@ -69,10 +65,14 @@ typedef struct cli {
 } htils_cli_t;
 
 /**
- * @brief Create a new cli
+ * @brief Create a new cli.
  *
  * @details Allocates a new \ref htils_cli_t struct and initializes default
  * values.
+ *
+ * @pre
+ * - @c arena, @c argv, @c name, and @c desc must be valid and not null.
+ * - @c argc must be greater than 1.
  *
  * @param arena The arena to use for allocating memory in the cli parser.
  * @param argc The number of arguments
@@ -80,16 +80,17 @@ typedef struct cli {
  * @param name The name of the cli
  * @param desc The description of the cli
  *
- * @pre @c arena, @c argc, @c argv, @c name, and @c desc must be valid and not
- * null.
- *
  * @return A new \ref htils_cli_t struct.
  */
 htils_cli_t *cli_new(arena_t *arena, i64 argc, cstr **argv, const string *name,
                      const string *desc);
 
+//
+//
+//
+
 /**
- * @brief Add an option to the cli
+ * @brief Add an option to the cli.
  *
  * @details This will generate short and long option based on the name, and
  * provides a description for the option in the usage command, allowing marking
@@ -105,18 +106,21 @@ htils_cli_t *cli_new(arena_t *arena, i64 argc, cstr **argv, const string *name,
 void cli_add(htils_cli_t *cli, const string *name, const string *desc,
              b32 requires_arg);
 
+//
+//
+//
+
 /**
- * @brief Parse the cli through looping.
+ * @brief Parse the next CLI argument.
  *
- * @details This will loop through the arguments and parse the cli meant to be
- * used in a while loop, with a switch for the return. If an unknown arg is met
- * it will return '?', if an argument requires another argument, and it wasn't
- * provided, it will return with ':', and if an argument without a required
- * argument suddenly requires one, then it will return with ';'.
- *
- * @param cli The cli to parse.
+ * @details Intended to be called in a `while` loop with a `switch` on the
+ * return. Returns the matched argument's code, or one of the error codes:
+ * '?' for an unknown argument, ':' when a required argument was missing, and
+ * ';' when an argument unexpectedly needs one.
  *
  * @pre @c cli must be valid and not null.
+ *
+ * @param cli The cli to parse.
  *
  * @return The matched argument, '?', ':', or ';'.
  */

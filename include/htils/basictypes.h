@@ -1,9 +1,13 @@
 #ifndef HTILS_BASICTYPES_H
 #define HTILS_BASICTYPES_H
 
+/***********************************/
+
 #include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
+
+/***********************************/
 
 /** Alias of uint8_t for better naming conventions. */
 typedef uint8_t u8;
@@ -35,7 +39,7 @@ typedef float f32;
 /** Alias of double for better naming conventions. */
 typedef double f64;
 
-/** Make bool more platform efficient */
+/** Boolean, stored as a 32-bit int (cheaper to pass/return than \c _Bool). */
 typedef u32 b32;
 
 /** Defines true as 1. */
@@ -51,24 +55,15 @@ typedef u32 b32;
 /** Make NULL lower-case. */
 #define null NULL
 
-/** Make char  more opaque. */
+/** Character; htils' char alias. */
 typedef char cstr;
 
-/** Make unsigned char more opaque. */
+/** Unsigned character; htils' unsigned char alias. */
 typedef unsigned char ucstr;
 
-/** Make optional types that just makes it more opaque it's nullable. */
+/** Aliases that mark a value as nullable by name when \c USE_NULLABLE_TYPES is
+ * defined. */
 #ifdef USE_NULLABLE_TYPES
-typedef u8 u8_nullable;
-typedef u16 u16_nullable;
-typedef u32 u32_nullable;
-typedef u64 u64_nullable;
-
-typedef i8 i8_nullable;
-typedef i16 i16_nullable;
-typedef i32 i32_nullable;
-typedef i64 i64_nullable;
-
 typedef cstr cstr_nullable;
 typedef ucstr ucstr_nullable;
 #endif

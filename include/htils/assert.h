@@ -1,22 +1,14 @@
 #ifndef HTILS_ASSERT_H
 #define HTILS_ASSERT_H
 
-//
-//
-//
-
 /** For using the GNU extension `program_invocation_short_name` */
 #define _GNU_SOURCE
 
-//
-//
-//
+/***********************************/
 
 #include <htils/basictypes.h>
 
-//
-//
-//
+/***********************************/
 
 /**
  * @brief The name of the program, exposed by the GNU standard.
@@ -27,10 +19,6 @@
  * @note This variable depends on GNU extensions, and is not portable.
  */
 extern cstr *program_invocation_short_name;
-
-//
-//
-//
 
 /**
  * @brief Terminates the program with an error message.
@@ -55,9 +43,20 @@ _Noreturn void __htils_assert_fail(const cstr *expr_str, const cstr *executable,
                                    const cstr *file, u32 line,
                                    const cstr *func);
 
+/**
+ * @brief Assert that @c expr is true, terminating the program otherwise.
+ *
+ * @details On failure, calls \ref __htils_assert_fail() with the expression
+ * text, the program name, and the file/line/function via `__FILE__`,
+ * `__LINE__`, and `__func__`.
+ *
+ * @param expr The expression to assert.
+ *
+ * @see \ref __htils_assert_fail()
+ */
 #define htils_assert(expr)                                                     \
   ((expr) ? (void)0                                                            \
           : __htils_assert_fail(#expr, program_invocation_short_name,          \
                                 __FILE__, __LINE__, __func__))
 
-#endif // !DAPPIE_ASSERT_H
+#endif // !HTILS_ASSERT_H
