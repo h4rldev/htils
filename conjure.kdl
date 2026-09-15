@@ -48,7 +48,6 @@ project {
     htils-release-static-threadsafe {
       extends htils-release-threadsafe
       link static
-      c_flags -DHTILS_THREAD_SAFE
     }
   }
 
