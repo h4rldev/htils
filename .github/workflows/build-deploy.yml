@@ -13,7 +13,7 @@ jobs:
         uses: cachix/install-nix-action@v31
 
       - name: Build docs
-        run: nix run .#doxygen -- Doxyfile
+        run: nix run nixpkgs#doxygen -- Doxyfile
 
       - name: Check CLOUDFLARE_API_TOKEN
         id: check-token
