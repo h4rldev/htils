@@ -29,7 +29,12 @@
         profile,
         artifact,
         pc,
-      }:
+      }: let
+        artifactStem =
+          pkgs.lib.removePrefix "lib"
+          (pkgs.lib.removeSuffix ".so"
+            (pkgs.lib.removeSuffix ".a" (baseNameOf artifact)));
+      in
         pkgs.stdenv.mkDerivation {
           pname = name;
           version = pversion;
@@ -53,7 +58,11 @@
             mkdir -p $doc/share/doc/htils/
 
             cp ${artifact} $out/lib
-            sed -e "s|^prefix=.*|prefix=$out|" -e "s|^libdir=.*|libdir=$out/lib|" lib/${profile}/pkgconfig/${pc} > $out/lib/pkgconfig/${pc}
+            sed -e "s|^prefix=.*|prefix=$out|" \
+              -e "s|^libdir=.*|libdir=$out/lib|" \
+              lib/${profile}/pkgconfig/${artifactStem}.pc \
+              > $out/lib/pkgconfig/${pc}
+
             cp include/htils.h $out/include
             cp include/htils/* $out/include/htils/
             cp -r doc/html/* $doc/share/doc/htils/
