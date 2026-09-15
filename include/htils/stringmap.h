@@ -14,9 +14,12 @@
 /**
  * @brief The state of a stringmap entry.
  *
- * @var EMPTY The entry is empty.
- * @var OCCUPIED The entry is occupied.
- * @var DEAD The entry is dead.
+ * @var EMPTY
+ * The entry is empty.
+ * @var OCCUPIED
+ * The entry is occupied.
+ * @var DEAD
+ * The entry is dead.
  */
 typedef enum stringmap_entry_state {
   EMPTY,
@@ -25,14 +28,16 @@ typedef enum stringmap_entry_state {
 } stringmap_entry_state_t;
 
 /**
- *
  * @brief The result of a stringmap operation.
  *
- * @var CREATED The entry was created.
- * @var UPDATED The entry was updated.
- *
- * @var NOT_FOUND The entry was not found.
- * @var KILLED The entry was killed.
+ * @var CREATED
+ * The entry was created.
+ * @var UPDATED
+ * The entry was updated.
+ * @var NOT_FOUND
+ * The entry was not found.
+ * @var KILLED
+ * The entry was killed.
  */
 typedef enum stringmap_result {
   CREATED,
