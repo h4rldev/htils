@@ -35,16 +35,19 @@ project {
 
     htils-debug-threadsafe {
       extends htils-debug
+      artifact "htils-debug-threadsafe"
       c_flags -DHTILS_THREAD_SAFE
     }
 
     htils-release-threadsafe {
       extends htils-release
+      artifact "htils-threadsafe"
       c_flags -DHTILS_THREAD_SAFE
     }
 
     htils-release-static-threadsafe {
-      extends htils-release-static
+      extends htils-release-threadsafe
+      link static
       c_flags -DHTILS_THREAD_SAFE
     }
   }

@@ -96,21 +96,21 @@
         htils-threadsafe = mkHtils {
           name = "htils-threadsafe";
           profile = "htils-release-threadsafe";
-          artifact = "lib/htils-release-threadsafe/libhtils.so";
+          artifact = "lib/htils-release-threadsafe/libhtils-threadsafe.so";
           pc = "htils-threadsafe.pc";
         };
 
         htils-debug-threadsafe = mkHtils {
           name = "htils-debug-threadsafe";
           profile = "htils-debug-threadsafe";
-          artifact = "lib/htils-debug-threadsafe/libhtils-debug.a";
+          artifact = "lib/htils-debug-threadsafe/libhtils-debug-threadsafe.a";
           pc = "htils-debug-threadsafe.pc";
         };
 
         htils-threadsafe-static = mkHtils {
           name = "htils-threadsafe-static";
           profile = "htils-release-static-threadsafe";
-          artifact = "lib/htils-release-static-threadsafe/libhtils.a";
+          artifact = "lib/htils-release-static-threadsafe/libhtils-threadsafe.a";
           pc = "htils-threadsafe-static.pc";
         };
       };
