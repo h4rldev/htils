@@ -9,13 +9,11 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
 
-      - name: Setup doxygen
-        run: |
-          sudo apt update
-          sudo apt install doxygen
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v31
 
       - name: Build docs
-        run: doxygen Doxyfile
+        run: nix run .#doxygen -- Doxyfile
 
       - name: Check CLOUDFLARE_API_TOKEN
         id: check-token
