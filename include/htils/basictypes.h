@@ -52,6 +52,11 @@ typedef u32 b32;
 #define false (0)
 #endif
 
+/** Borrow thread_local from threads.h without using threads.h */
+#ifndef thread_local
+#define thread_local _Thread_local
+#endif
+
 /** Make NULL lower-case. */
 #define null NULL
 
