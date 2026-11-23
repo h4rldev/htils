@@ -8,8 +8,8 @@
 #include <htils/basictypes.h>
 
 #ifdef HTILS_THREAD_SAFE
+#include <pthread.h>
 #include <stdatomic.h>
-#include <threads.h>
 
 #include <htils/atomic_types.h>
 #endif
@@ -388,14 +388,14 @@ arena_t *arena_new(u64 reserve_size, u64 commit_size) {
   arena->committed = commit_size;
   atomic_store(&arena->pos, ARENA_BASE_POS);
   arena->commit_pos = commit_size;
-  mtx_init(&arena->commit_mtx, mtx_plain);
+  pthread_mutex_init(&arena->commit_mtx, null);
 
   return arena;
 }
 
 void arena_free(arena_t *arena) {
   htils_assert(arena && "Atomic arena cannot be null.");
-  mtx_destroy(&arena->commit_mtx);
+  pthread_mutex_destroy(&arena->commit_mtx);
   htils_assert(mem_release(arena, arena->reserved + ARENA_BASE_POS) &&
                "Failed to release arena.");
 }
@@ -414,7 +414,7 @@ void *__arena_alloc(struct arena *arena, u64 size) {
   } while (!atomic_compare_exchange_weak(&arena->pos, &old_pos, new_pos));
 
   if (new_pos > arena->commit_pos) {
-    mtx_lock(&arena->commit_mtx);
+    pthread_mutex_lock(&arena->commit_mtx);
     if (new_pos > arena->commit_pos) {
       u64 chunk_size = arena->committed;
       u64 chunks_needed =
@@ -431,7 +431,7 @@ void *__arena_alloc(struct arena *arena, u64 size) {
 
       arena->commit_pos = new_commit_pos;
     }
-    mtx_unlock(&arena->commit_mtx);
+    pthread_mutex_unlock(&arena->commit_mtx);
   }
 
   arena->pos = new_pos;
@@ -493,7 +493,7 @@ void arena_clear(arena_t *arena) {
     return;
 
 #ifdef HTILS_THREAD_SAFE
-  mtx_lock(&arena->commit_mtx);
+  pthread_mutex_lock(&arena->commit_mtx);
   decommit_size =
       arena->commit_pos > decommit_from ? arena->commit_pos - decommit_from : 0;
 #endif
@@ -504,6 +504,6 @@ void arena_clear(arena_t *arena) {
   }
 
 #ifdef HTILS_THREAD_SAFE
-  mtx_unlock(&arena->commit_mtx);
+  pthread_mutex_unlock(&arena->commit_mtx);
 #endif
 }

@@ -5,8 +5,8 @@
 
 #ifdef HTILS_THREAD_SAFE
 #include <htils/atomic_types.h>
+#include <pthread.h>
 #include <stdatomic.h>
-#include <threads.h>
 #endif
 
 #include <htils/basictypes.h>
@@ -47,7 +47,7 @@ typedef struct arena {
   u64 committed;
   atomic_u64 pos;
   u64 commit_pos;
-  mtx_t commit_mtx;
+  pthread_mutex_t commit_mtx;
 } arena_t;
 #endif
 

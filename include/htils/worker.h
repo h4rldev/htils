@@ -7,8 +7,8 @@
 
 /***********************************/
 
+#include <pthread.h>
 #include <stdatomic.h>
-#include <threads.h>
 
 #include <htils/arena.h>
 #include <htils/atomic_types.h>
@@ -90,7 +90,7 @@ typedef struct htils_worker_config {
  * @param primitives_init Whether the primitives have been initialized.
  */
 typedef struct htils_worker {
-  thrd_t thread;
+  pthread_t thread;
   arena_t *scratch;
   atomic_b32 running;
   atomic_b32 pause;
@@ -98,8 +98,8 @@ typedef struct htils_worker {
   htils_worker_fn_t fn;
   htils_worker_task_t task;
   void *userdata;
-  mtx_t pause_mtx; // guards pause awaits
-  cnd_t pause_cnd; // signals on resume/stop
+  pthread_mutex_t pause_mtx; // guards pause awaits
+  pthread_cond_t pause_cnd;  // signals on resume/stop
   b32 primitives_init;
 } htils_worker_t;
 

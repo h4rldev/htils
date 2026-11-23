@@ -2,8 +2,8 @@
 
 /***********************************/
 
+#include <pthread.h>
 #include <stdio.h>
-#include <threads.h>
 
 #include <htils/arena.h>
 #include <htils/worker.h>
@@ -17,17 +17,17 @@
  *
  * @param arg The worker to run.
  *
- * @return Always 0.
+ * @return Always null.
  */
-static int htils_worker_entry(void *arg) {
+static void *htils_worker_entry(void *arg) {
   htils_worker_t *worker = (htils_worker_t *)arg;
 
   if (worker->task) {
     while (atomic_load(&worker->running)) {
-      mtx_lock(&worker->pause_mtx);
+      pthread_mutex_lock(&worker->pause_mtx);
       while (atomic_load(&worker->pause) && atomic_load(&worker->running))
-        cnd_wait(&worker->pause_cnd, &worker->pause_mtx);
-      mtx_unlock(&worker->pause_mtx);
+        pthread_cond_wait(&worker->pause_cnd, &worker->pause_mtx);
+      pthread_mutex_unlock(&worker->pause_mtx);
 
       if (!atomic_load(&worker->running))
         break;
@@ -44,7 +44,7 @@ static int htils_worker_entry(void *arg) {
     arena_clear(worker->scratch);
 
   atomic_store(&worker->running, false);
-  return 0;
+  return null;
 }
 
 //
@@ -85,26 +85,25 @@ static b32 htils_worker_start(htils_worker_t *worker,
     worker->scratch = arena_new(GiB(1), MiB(1));
 
   if (!worker->primitives_init) {
-    if (mtx_init(&worker->pause_mtx, mtx_plain) != thrd_success) {
+    if (pthread_mutex_init(&worker->pause_mtx, null) != 0) {
       fprintf(stderr, "[htils] failed to create worker mutex for worker %p\n",
               (void *)worker);
       atomic_store(&worker->running, false);
       return false;
     }
 
-    if (cnd_init(&worker->pause_cnd) != thrd_success) {
+    if (pthread_cond_init(&worker->pause_cnd, null) != 0) {
       fprintf(stderr,
               "[htils] failed to create worker condition for worker %p\n",
               (void *)worker);
-      mtx_destroy(&worker->pause_mtx);
+      pthread_mutex_destroy(&worker->pause_mtx);
       atomic_store(&worker->running, false);
       return false;
     }
     worker->primitives_init = true;
   }
 
-  if (thrd_create(&worker->thread, htils_worker_entry, worker) !=
-      thrd_success) {
+  if (pthread_create(&worker->thread, null, htils_worker_entry, worker) != 0) {
     fprintf(stderr, "[htils] failed to create worker thread for worker %p\n",
             (void *)worker);
     atomic_store(&worker->running, false);
@@ -112,7 +111,7 @@ static b32 htils_worker_start(htils_worker_t *worker,
   }
 
   if (config->detach)
-    thrd_detach(worker->thread);
+    pthread_detach(worker->thread);
 
   return true;
 }
@@ -157,9 +156,9 @@ void htils_worker_request_stop(htils_worker_t *worker) {
   if (!worker)
     return;
   atomic_store(&worker->running, false);
-  mtx_lock(&worker->pause_mtx); // wake a paused worker so it can exit
-  cnd_signal(&worker->pause_cnd);
-  mtx_unlock(&worker->pause_mtx);
+  pthread_mutex_lock(&worker->pause_mtx); // wake a paused worker so it can exit
+  pthread_cond_signal(&worker->pause_cnd);
+  pthread_mutex_unlock(&worker->pause_mtx);
 }
 
 void htils_worker_set_paused(htils_worker_t *worker, b32 paused) {
@@ -167,9 +166,9 @@ void htils_worker_set_paused(htils_worker_t *worker, b32 paused) {
     return;
   atomic_store(&worker->pause, paused ? true : false);
   if (!paused) {
-    mtx_lock(&worker->pause_mtx);
-    cnd_signal(&worker->pause_cnd);
-    mtx_unlock(&worker->pause_mtx);
+    pthread_mutex_lock(&worker->pause_mtx);
+    pthread_cond_signal(&worker->pause_cnd);
+    pthread_mutex_unlock(&worker->pause_mtx);
   }
 }
 
@@ -197,7 +196,7 @@ b32 htils_worker_should_stop(const htils_worker_t *worker) {
 void htils_worker_join(htils_worker_t *worker) {
   if (!worker || worker->detached)
     return;
-  thrd_join(worker->thread, null);
+  pthread_join(worker->thread, null);
 }
 
 #else
